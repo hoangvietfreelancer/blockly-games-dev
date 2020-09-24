@@ -1,0 +1,38 @@
+<!-- Modal -->
+<div class="modal fade" id="alert" tabindex="-1" role="dialog" aria-labelledby="exampleModalCenterTitle" aria-hidden="true">
+	<div class="modal-dialog modal-dialog-centered" role="document">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h5 class="modal-title" id="exampleModalCenterTitle">Chào mừng các bạn đã đến với trò chơi giáo dục STEAM trên nền tảng mã nguồn mở!</h5>
+				<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+					<span aria-hidden="true">&times;</span>
+				</button>
+			</div>
+			<div class="modal-body">
+				<p>Hi vọng bạn sẽ hài lòng và ủng hộ chúng tôi để hoàn thiện và phát triển hơn nữa sản phẩm này!</p>
+				<p>Để biết thêm thông tin, truy cập vào <a href="support.html">đây</a></p>
+			</div>
+			<div class="modal-footer">
+				<button type="button" class="btn btn-secondary" data-dismiss="modal">Đóng</button>
+				<button type="button" class="btn btn-primary" data-dismiss="modal" onclick="delCookie('modal');setCookie('modal', 'false', 365);">Không hiện lại thông báo này</button>
+			</div>
+		</div>
+	</div>
+</div>
+<script type="text/javascript">
+if (checkModalShow() == true) {
+	$("#alert").modal("show");
+	if (checkTheme() == "dark") {
+		$(".modal-content").addClass("dark")
+	} else {
+		$(".modal-content").addClass("light")
+	}
+	if (checkLanguage() == "en") {
+		$(".modal-header h5").text("Welcome to STEAM educational game on open source platform");
+		$(".modal-body p:nth-child(1)").text("Hope you will be satisfied and support us to improve and further develop this product!");
+		$(".modal-body p:nth-child(2)").html('For more information, click in <a href="support.html">here</a>');
+		$(".modal-footer .btn-secondary").text("Close")
+		$(".modal-footer .btn-primary").text("Never show this again")
+	}
+}
+</script>

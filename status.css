@@ -1,0 +1,9 @@
+#clearDataPara {
+    position: fixed;
+    bottom: 0;
+}
+#clearData {
+    padding: 0 4px;
+    margin: 5px 10px;
+    font-size: medium;
+}

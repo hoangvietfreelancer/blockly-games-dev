@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blockly Games</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+    <link rel="stylesheet" type="text/css" href="common/master.css">
+    <link rel="stylesheet" type="text/css" href="theme.css">
+    <script src="fontawesome.js" crossorigin="anonymous"></script>
+    <!-- <link rel="stylesheet" type="text/css" href="status.css"> -->
+</head>
+
+<body onload="loading()">
+    <div class="container-fluid mb-5">
+        <header></header>
+        <nav></nav>
+        <div class="alert"></div>
+        <main class="mb-2">
+            <div class="progress mb-4">
+                <div id="puzzle" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Ghép hình</div>
+            </div>
+            <div class="progress mb-4">
+                <div id="maze" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Mê cung lạc lối</div>
+            </div>
+            <div class="progress mb-4">
+                <div id="bird" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Chim tìm mồi</div>
+            </div>
+            <div class="progress mb-4">
+                <div id="turtle" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Rùa vẽ hình</div>
+            </div>
+            <div class="progress mb-4">
+                <div id="movie" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Làm phim</div>
+            </div>
+            <div class="progress mb-4">
+                <div id="music" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Nghệ sĩ</div>
+            </div>
+            <div class="progress mb-4">
+                <div id="pond-tutor" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Nhập môn đại chiến</div>
+            </div>
+            <div class="progress">
+                <div id="pond-duck" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">Đại chiến trên hồ</div>
+            </div>
+        </main>
+        <footer></footer>
+    </div>
+    <script src="masterFunc.js"></script>
+    <script type="text/javascript">
+    function loading() {
+        $("header").load("header.html");
+        $("nav").load("nav.html");
+        $("footer").load("footer.html");
+        $(".alert").load("alert.html");
+        clearDataButtonShow();
+        $(".progress-bar").width("0%");
+        $(".progress").height("2rem");
+        $(".progress").css("fontSize", "0.8rem");
+        if (checkLanguage() === "en") {
+            document.getElementById('pond-duck').innerHTML = 'Pond';
+            document.getElementById('pond-tutor').innerHTML = 'Pond Tutor';
+            document.getElementById('music').innerHTML = 'Music';
+            document.getElementById('movie').innerHTML = 'Movie';
+            document.getElementById('turtle').innerHTML = 'Turtle';
+            document.getElementById('bird').innerHTML = 'Bird';
+            document.getElementById('maze').innerHTML = 'Maze';
+            document.getElementById('puzzle').innerHTML = 'Puzzle';
+        }
+        if (checkTheme() == "dark") {
+            $("body").addClass("dark");
+            $(".subtitle").addClass("dark");
+            $(".progress").addClass("bg-dark")
+            showStatus("dark");
+            // $(".progress div").addClass("text-light")
+        } else {
+            $("body").addClass("light");
+            $(".subtitle").addClass("light");
+            $(".progress").addClass("light")
+            // $(".progress div").addClass("text-dark")
+            showStatus("light");
+        }
+    }
+
+    function calcPercent(completed) {
+        var percent = 10 * completed;
+        return percent;
+    }
+
+    function getData(name) {
+        if (name !== "puzzle") {
+            var exits = 0;
+            for (i = 1; 10 >= i; i++) {
+                if (localStorage.getItem(name + i) !== null) {
+                    exits++;
+                };
+            }
+            return calcPercent(exits);
+        } else if (localStorage.getItem(name + 1) !== null) {
+            return 100;
+        } else {
+            return 0;
+        }
+    }
+
+    function showStatus(theme) {
+        exits = checkExitsData();
+        if (exits != 0) {
+            for (a = 0; a < gameNames.length; a++) {
+                var getWidth = getData(gameNames[a]);
+                if (getWidth > 60) {
+                    $("#" + gameNames[a]).addClass("bg-success");
+                } else if (getWidth > 25) {
+                    $("#" + gameNames[a]).addClass("bg-warning");
+                    $("#" + gameNames[a]).addClass("text-dark");
+                } else if (getWidth > 0) {
+                    $("#" + gameNames[a]).addClass("bg-danger");
+                } else {
+                    if (theme == "dark") {
+                        $("#" + gameNames[a]).addClass("text-light");
+                    } else {
+                        $("#" + gameNames[a]).addClass("text-dark");
+                    }
+                    $("#" + gameNames[a]).addClass("ml-3");
+                }
+                $("#" + gameNames[a]).animate({
+                    width: getWidth + '%'
+                }, 750);
+            }
+        } else {
+            if (theme == "dark") {
+                $(".progress-bar").addClass("text-light");
+            } else {
+                $(".progress-bar").addClass("text-dark");
+            }
+            $(".progress-bar").addClass("ml-3");
+            $(".progress-bar").animate({
+                width: "0%"
+            }, 1);
+        }
+    }
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1" crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js" integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM" crossorigin="anonymous"></script>
+</body>
+
+</html>

@@ -1,0 +1,197 @@
+body.dark,
+.modal-content.dark,
+.blocklySvg.dark {
+    color: white;
+    background-color: #222 !important;
+    background-image: url("https://camo.githubusercontent.com/5b8e4cd1a5ce69b6affa17ebd8e4aee00c147618/68747470733a2f2f7374796c6973687468656d65732e6769746875622e696f2f4769744875622d4461726b2f696d616765732f6261636b67726f756e64732f62672d63726f737368617463682e706e67") !important;
+    background-clip: border-box !important;
+    background-origin: padding-box !important;
+    background-attachment: scroll !important;
+    background-repeat: repeat !important;
+    background-size: auto !important;
+    background-position: left top !important;
+    padding: 0;
+    margin: 0;
+}
+
+.blocklyWidgetDiv.dark {
+    background-image: url("https://camo.githubusercontent.com/5b8e4cd1a5ce69b6affa17ebd8e4aee00c147618/68747470733a2f2f7374796c6973687468656d65732e6769746875622e696f2f4769744875622d4461726b2f696d616765732f6261636b67726f756e64732f62672d63726f737368617463682e706e67") !important;
+}
+
+span#title.dark {
+    color: rgb(190, 190, 190);
+}
+
+span#title a.dark,
+a#back.dark {
+    color: rgb(79, 140, 201);
+}
+
+span#title a:hover.dark,
+a#back:hover.dark {
+    color: rgb(204, 187, 68);
+}
+
+.blocklyToolboxDiv.dark,
+.goog-menu.dark {
+    background-color: rgb(28, 28, 28) !important;
+    color: rgb(190, 190, 190);
+}
+
+.blocklyTreeRow:not(.blocklyTreeSelected):hover.dark,
+.blocklyTreeLabel:hover.dark,
+.goog-menuitem-highlight.dark,
+.blocklyTreeSelected.dark {
+    color: #fff;
+}
+
+.blocklyFlyoutBackground.dark {
+    fill: rgb(28, 28, 28);
+}
+
+.gaugeFront.dark {
+    stroke: rgb(0, 173, 216);
+}
+
+.blocklyMainBackground.dark {
+    stroke: rgb(190, 190, 190);
+    stroke-width: 0.5;
+}
+
+#notePicker.dark {
+    position: absolute;
+    left: 165%;
+    top: -60%;
+}
+
+.blocklyWidgetDiv .goog-menuitem-content.dark {
+    color: rgb(190, 190, 190);
+}
+
+.tab.dark {
+    display: inline-block;
+    color: rgb(190, 190, 190);
+    margin-right: 5px;
+    border-radius: 2px;
+
+    padding: 0px 10px;
+}
+
+.tab-selected.dark {
+    background-color: #563d7c !important;
+    color: #fff;
+}
+
+#tabarea.dark {
+    top: 48px !important;
+}
+
+.subtitle.dark,
+#statusPara.dark,
+#clearDataPara.dark {
+    color: rgb(190, 190, 190);
+}
+
+.blocklyTreeRow:hover .blocklyTreeLabel.dark {
+    color: #1c1c1c;
+}
+
+body.light,
+.blocklySvg.light {
+    background-color: #222 !important;
+    background-image: url("lightBacground.jpg") !important;
+    background-clip: border-box !important;
+    background-origin: padding-box !important;
+    background-attachment: scroll !important;
+    background-repeat: repeat !important;
+    background-size: auto !important;
+    background-position: left top !important;
+    padding: 0;
+    margin: 0;
+}
+
+.blocklyWidgetDiv.light {
+    background-image: url("https://img.freepik.com/vetores-gratis/fundo-do-teste-padrao-do-cubo_1051-833.jpg?size=338&ext=jpg") !important;
+}
+
+span#title.light {
+    color: #000;
+}
+
+span#title a.light,
+a#back.light {
+    color: rgb(79, 140, 201);
+}
+
+span#title a:hover.light,
+a#back:hover.light {
+    color: rgb(204, 187, 68);
+}
+
+.blocklyToolboxDiv.light,
+.goog-menu.light {
+    background-color: #fff !important;
+    color: #000;
+}
+
+.blocklyTreeRow:not(.blocklyTreeSelected):hover.light,
+.goog-menuitem-highlight.light,
+.blocklyTreeSelected.light {
+    color: #fff;
+}
+
+.blocklyFlyoutBackground.light {
+    fill: #fff;
+}
+
+.gaugeFront.light {
+    stroke: rgb(0, 173, 216);
+}
+
+.blocklyMainBackground.light {
+    stroke: rgb(190, 190, 190);
+    stroke-width: 0.5;
+}
+
+#notePicker.light {
+    position: absolute;
+    left: 165%;
+    top: -60%;
+}
+
+.blocklyWidgetDiv .goog-menuitem-content.light {
+    color: rgb(190, 190, 190);
+}
+
+.tab.light {
+    display: inline-block;
+    color: rgb(190, 190, 190);
+    margin-right: 5px;
+    border-radius: 2px;
+
+    padding: 0px 10px;
+}
+
+.tab-selected.light {
+    background-color: #563d7c !important;
+    color: #fff;
+}
+
+#tabarea.light {
+    top: 48px !important;
+}
+
+.subtitle.light,
+#statusPara.light,
+#clearDataPara.light {
+    color: rgb(48, 47, 47);
+}
+
+p.light {
+    color: rgb(48, 47, 47);
+}
+
+.level_dot.light,
+.level_number.light {
+    border: solid 1px #000;
+}

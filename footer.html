@@ -1,0 +1,31 @@
+<div class="row align-items-center ml-0 mr-0 mb-2">
+	<div class="dropdown languages" style="display: inline-block;">
+		<button id="changeLanguages" class="btn btn-secondary dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Tiếng Việt</button>
+		<div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+			<a class="dropdown-item" onclick="delCookie('lang');setCookie('lang', 'en', 365);location.reload();">English</a>
+			<a class="dropdown-item" onclick="delCookie('lang');setCookie('lang', 'vi', 10);location.reload();">Tiếng Việt</a>
+		</div>
+	</div>
+	<a href="" style="color: unset;display: inline-block;" class="ml-2"><i class="fas fa-adjust fa-lg mt-2" onclick="changeTheme();"></i></a>
+</div>
+<p id="clearDataPara" style="display: none;" class="mb-1">Bạn muốn bắt đầu lại?<button class="btn btn-primary" id="clearData" onclick="deleteData()">Bấm vào đây</button></p>
+<p id="statusPara">Bạn muốn xem lịch sử <button class="btn btn-primary" id="clearData" onclick="window.location.href='status.html'">Bấm vào đây</button></p>
+<script type="text/javascript">
+if (checkTheme() == "dark") {
+	$(".theme button").addClass("bg-dark text-light")
+	$(".languages button").addClass("bg-dark text-light")
+	$("#clearDataPara").addClass("dark")
+	$("#statusPara").addClass("dark")
+} else {
+	$(".theme button").addClass("bg-light text-dark")
+	$(".languages button").addClass("bg-light text-dark")
+	$("#clearDataPara").addClass("light")
+	$("#statusPara").addClass("light")
+}
+if (checkLanguage() == "en") {
+	document.getElementById('changeLanguages').innerText = 'English';
+	$("#clearDataPara").html("Want to start over?" + '<button class="btn btn-primary" id="clearData" onclick="deleteData()">Click here</button>');
+	$("#statusPara").html("Want to see status?" + '<button class="btn btn-primary" id="clearData" onclick="loadStatus()">Click here</button>');
+}
+clearDataButtonShow();
+</script>
