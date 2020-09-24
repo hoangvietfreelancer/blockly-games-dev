@@ -1,0 +1,22 @@
+#banner {
+    padding: 1em;
+}
+.subtitle {
+    font-style: italic;
+    font-size: 100%;
+    color: rgb(190, 190, 190);
+}
+a {
+	color: rgb(79, 140, 201);
+}
+a:hover {
+    color: rgb(204, 187, 68);;
+    text-decoration: underline;
+}
+#clearData {
+	padding: 0 4px;
+	margin: 5px 10px;
+}
+#linkButton {
+	display: none;
+}
