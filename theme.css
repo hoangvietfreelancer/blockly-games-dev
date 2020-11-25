@@ -191,6 +191,10 @@ p.light {
     color: rgb(48, 47, 47);
 }
 
+body.light a {
+    color: #495057;
+}
+
 .level_dot.light,
 .level_number.light {
     border: solid 1px #000;
