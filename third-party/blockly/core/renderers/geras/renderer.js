@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2019 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -28,6 +14,7 @@ goog.provide('Blockly.geras.Renderer');
 
 goog.require('Blockly.blockRendering');
 goog.require('Blockly.blockRendering.Renderer');
+goog.require('Blockly.geras.ConstantProvider');
 goog.require('Blockly.geras.Drawer');
 goog.require('Blockly.geras.HighlightConstantProvider');
 goog.require('Blockly.geras.PathObject');
@@ -37,12 +24,13 @@ goog.require('Blockly.utils.object');
 
 /**
  * The geras renderer.
+ * @param {string} name The renderer name.
  * @package
  * @constructor
  * @extends {Blockly.blockRendering.Renderer}
  */
-Blockly.geras.Renderer = function() {
-  Blockly.geras.Renderer.superClass_.constructor.call(this);
+Blockly.geras.Renderer = function(name) {
+  Blockly.geras.Renderer.superClass_.constructor.call(this, name);
 
   /**
    * The renderer's highlight constant provider.
@@ -60,9 +48,27 @@ Blockly.utils.object.inherits(Blockly.geras.Renderer,
  * @package
  * @override
  */
-Blockly.geras.Renderer.prototype.init = function() {
-  Blockly.geras.Renderer.superClass_.init.call(this);
+Blockly.geras.Renderer.prototype.init = function(theme,
+    opt_rendererOverrides) {
+  Blockly.geras.Renderer.superClass_.init.call(this, theme,
+      opt_rendererOverrides);
   this.highlightConstants_ = this.makeHighlightConstants_();
+  this.highlightConstants_.init();
+};
+
+/**
+ * @override
+ */
+Blockly.geras.Renderer.prototype.refreshDom = function(svg, theme) {
+  Blockly.geras.Renderer.superClass_.refreshDom.call(this, svg, theme);
+  this.getHighlightConstants().init();
+};
+
+/**
+ * @override
+ */
+Blockly.geras.Renderer.prototype.makeConstants_ = function() {
+  return new Blockly.geras.ConstantProvider();
 };
 
 /**
@@ -93,12 +99,15 @@ Blockly.geras.Renderer.prototype.makeDrawer_ = function(block, info) {
 /**
  * Create a new instance of a renderer path object.
  * @param {!SVGElement} root The root SVG element.
+ * @param {!Blockly.Theme.BlockStyle} style The style object to use for
+ *     colouring.
  * @return {!Blockly.geras.PathObject} The renderer path object.
  * @package
  * @override
  */
-Blockly.geras.Renderer.prototype.makePathObject = function(root) {
-  return new Blockly.geras.PathObject(root);
+Blockly.geras.Renderer.prototype.makePathObject = function(root, style) {
+  return new Blockly.geras.PathObject(root, style,
+      /** @type {!Blockly.geras.ConstantProvider} */ (this.getConstants()));
 };
 
 /**
@@ -107,7 +116,7 @@ Blockly.geras.Renderer.prototype.makePathObject = function(root) {
  *     provider.
  * @protected
  */
-Blockly.blockRendering.Renderer.prototype.makeHighlightConstants_ = function() {
+Blockly.geras.Renderer.prototype.makeHighlightConstants_ = function() {
   return new Blockly.geras.HighlightConstantProvider(
       /** @type {!Blockly.blockRendering.ConstantProvider} */
       (this.getConstants()));

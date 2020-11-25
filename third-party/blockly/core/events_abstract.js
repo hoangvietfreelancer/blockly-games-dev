@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2018 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2018 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -35,6 +21,13 @@ goog.require('Blockly.Events');
  * @constructor
  */
 Blockly.Events.Abstract = function() {
+
+  /**
+   * Whether or not the event is blank (to be populated by fromJson).
+   * @type {?boolean}
+   */
+  this.isBlank = null;
+
   /**
    * The workspace identifier for this event.
    * @type {string|undefined}
@@ -47,7 +40,7 @@ Blockly.Events.Abstract = function() {
    * perspective, and should be undone together.
    * @type {string}
    */
-  this.group = Blockly.Events.group_;
+  this.group = Blockly.Events.getGroup();
 
   /**
    * Sets whether the event should be added to the undo stack.
@@ -75,6 +68,7 @@ Blockly.Events.Abstract.prototype.toJson = function() {
  * @param {!Object} json JSON representation.
  */
 Blockly.Events.Abstract.prototype.fromJson = function(json) {
+  this.isBlank = false;
   this.group = json['group'];
 };
 
@@ -96,12 +90,14 @@ Blockly.Events.Abstract.prototype.run = function(_forward) {
 
 /**
  * Get workspace the event belongs to.
- * @return {Blockly.Workspace} The workspace the event belongs to.
+ * @return {!Blockly.Workspace} The workspace the event belongs to.
  * @throws {Error} if workspace is null.
  * @protected
  */
 Blockly.Events.Abstract.prototype.getEventWorkspace_ = function() {
-  var workspace = Blockly.Workspace.getById(this.workspaceId);
+  if (this.workspaceId) {
+    var workspace = Blockly.Workspace.getById(this.workspaceId);
+  }
   if (!workspace) {
     throw Error('Workspace is null. Event must have been generated from real' +
         ' Blockly events.');

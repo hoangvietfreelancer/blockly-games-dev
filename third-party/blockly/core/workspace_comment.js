@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2017 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -97,6 +83,12 @@ Blockly.WorkspaceComment = function(workspace, content, height, width, opt_id) {
    * @private
    */
   this.movable_ = true;
+
+  /**
+   * @type {boolean}
+   * @private
+   */
+  this.editable_ = true;
 
   /**
    * @protected
@@ -230,6 +222,23 @@ Blockly.WorkspaceComment.prototype.isMovable = function() {
  */
 Blockly.WorkspaceComment.prototype.setMovable = function(movable) {
   this.movable_ = movable;
+};
+
+/**
+ * Get whether this comment is editable or not.
+ * @return {boolean} True if editable.
+ */
+Blockly.WorkspaceComment.prototype.isEditable = function() {
+  return this.editable_ &&
+      !(this.workspace && this.workspace.options.readOnly);
+};
+
+/**
+ * Set whether this comment is editable or not.
+ * @param {boolean} editable True if editable.
+ */
+Blockly.WorkspaceComment.prototype.setEditable = function(editable) {
+  this.editable_ = editable;
 };
 
 /**

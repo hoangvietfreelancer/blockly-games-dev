@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2016 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2016 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -32,6 +18,7 @@ goog.provide('Blockly.WorkspaceDragSurfaceSvg');
 
 goog.require('Blockly.utils');
 goog.require('Blockly.utils.dom');
+goog.require('Blockly.utils.Svg');
 
 
 /**
@@ -48,20 +35,10 @@ Blockly.WorkspaceDragSurfaceSvg = function(container) {
 
 /**
  * The SVG drag surface. Set once by Blockly.WorkspaceDragSurfaceSvg.createDom.
- * @type {Element}
+ * @type {SVGElement}
  * @private
  */
 Blockly.WorkspaceDragSurfaceSvg.prototype.SVG_ = null;
-
-/**
- * SVG group inside the drag surface that holds blocks while a drag is in
- * progress. Blocks are moved here by the workspace at start of a drag and moved
- * back into the main SVG at the end of a drag.
- *
- * @type {Element}
- * @private
- */
-Blockly.WorkspaceDragSurfaceSvg.prototype.dragGroup_ = null;
 
 /**
  * Containing HTML element; parent of the workspace and the drag surface.
@@ -86,7 +63,8 @@ Blockly.WorkspaceDragSurfaceSvg.prototype.createDom = function() {
   *   <g class="blocklyBubbleCanvas">/g>
   * </svg>
   */
-  this.SVG_ = Blockly.utils.dom.createSvgElement('svg',
+  this.SVG_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.SVG,
       {
         'xmlns': Blockly.utils.dom.SVG_NS,
         'xmlns:html': Blockly.utils.dom.HTML_NS,
@@ -124,7 +102,7 @@ Blockly.WorkspaceDragSurfaceSvg.prototype.translateSurface = function(x, y) {
  * @package
  */
 Blockly.WorkspaceDragSurfaceSvg.prototype.getSurfaceTranslation = function() {
-  return Blockly.utils.getRelativeXY(this.SVG_);
+  return Blockly.utils.getRelativeXY(/** @type {!SVGElement} */ (this.SVG_));
 };
 
 /**
@@ -139,8 +117,8 @@ Blockly.WorkspaceDragSurfaceSvg.prototype.clearAndHide = function(newSurface) {
     throw Error('Couldn\'t clear and hide the drag surface: missing ' +
         'new surface.');
   }
-  var blockCanvas = this.SVG_.childNodes[0];
-  var bubbleCanvas = this.SVG_.childNodes[1];
+  var blockCanvas = /** @type {!Element} */ (this.SVG_.childNodes[0]);
+  var bubbleCanvas = /** @type {!Element} */ (this.SVG_.childNodes[1]);
   if (!blockCanvas || !bubbleCanvas ||
       !Blockly.utils.dom.hasClass(blockCanvas, 'blocklyBlockCanvas') ||
       !Blockly.utils.dom.hasClass(bubbleCanvas, 'blocklyBubbleCanvas')) {
@@ -170,9 +148,9 @@ Blockly.WorkspaceDragSurfaceSvg.prototype.clearAndHide = function(newSurface) {
 /**
  * Set the SVG to have the block canvas and bubble canvas in it and then
  * show the surface.
- * @param {!Element} blockCanvas The block canvas <g> element from the
+ * @param {!SVGElement} blockCanvas The block canvas <g> element from the
  *     workspace.
- * @param {!Element} bubbleCanvas The <g> element that contains the bubbles.
+ * @param {!SVGElement} bubbleCanvas The <g> element that contains the bubbles.
  * @param {Element} previousSibling The element to insert the block canvas and
        bubble canvas after when it goes back in the DOM at the end of a drag.
  * @param {number} width The width of the workspace SVG element.

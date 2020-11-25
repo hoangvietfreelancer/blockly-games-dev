@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2018 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2018 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -27,26 +13,27 @@
 goog.provide('Blockly.BubbleDragger');
 
 goog.require('Blockly.Bubble');
+goog.require('Blockly.constants');
 goog.require('Blockly.Events');
 goog.require('Blockly.Events.CommentMove');
 goog.require('Blockly.utils');
 goog.require('Blockly.utils.Coordinate');
-goog.require('Blockly.WorkspaceCommentSvg');
+
+goog.requireType('Blockly.IBubble');
 
 
 /**
  * Class for a bubble dragger.  It moves things on the bubble canvas around the
  * workspace when they are being dragged by a mouse or touch.  These can be
  * block comments, mutators, warnings, or workspace comments.
- * @param {!Blockly.Bubble|!Blockly.WorkspaceCommentSvg} bubble The item on the
- *     bubble canvas to drag.
+ * @param {!Blockly.IBubble} bubble The item on the bubble canvas to drag.
  * @param {!Blockly.WorkspaceSvg} workspace The workspace to drag on.
  * @constructor
  */
 Blockly.BubbleDragger = function(bubble, workspace) {
   /**
    * The item on the bubble canvas that is being dragged.
-   * @type {!Blockly.Bubble|!Blockly.WorkspaceCommentSvg}
+   * @type {!Blockly.IBubble}
    * @private
    */
   this.draggingBubble_ = bubble;
@@ -90,12 +77,14 @@ Blockly.BubbleDragger = function(bubble, workspace) {
    */
   this.dragSurface_ =
       Blockly.utils.is3dSupported() && !!workspace.getBlockDragSurface() ?
-      workspace.getBlockDragSurface() : null;
+      workspace.getBlockDragSurface() :
+      null;
 };
 
 /**
  * Sever all links from this object.
  * @package
+ * @suppress {checkTypes}
  */
 Blockly.BubbleDragger.prototype.dispose = function() {
   this.draggingBubble_ = null;
@@ -121,9 +110,9 @@ Blockly.BubbleDragger.prototype.startBubbleDrag = function() {
   this.draggingBubble_.setDragging && this.draggingBubble_.setDragging(true);
 
   var toolbox = this.workspace_.getToolbox();
-  if (toolbox) {
+  if (toolbox && typeof toolbox.addStyle == 'function') {
     var style = this.draggingBubble_.isDeletable() ? 'blocklyToolboxDelete' :
-        'blocklyToolboxGrab';
+                                                     'blocklyToolboxGrab';
     toolbox.addStyle(style);
   }
 };
@@ -159,14 +148,14 @@ Blockly.BubbleDragger.prototype.maybeDeleteBubble_ = function() {
 
   if (this.wouldDeleteBubble_) {
     if (trashcan) {
-      setTimeout(trashcan.close.bind(trashcan), 100);
+      setTimeout(trashcan.closeLid.bind(trashcan), 100);
     }
     // Fire a move event, so we know where to go back to for an undo.
     this.fireMoveEvent_();
     this.draggingBubble_.dispose(false, true);
   } else if (trashcan) {
-    // Make sure the trash can is closed.
-    trashcan.close();
+    // Make sure the trash can lid is closed.
+    trashcan.closeLid();
   }
   return this.wouldDeleteBubble_;
 };
@@ -182,12 +171,12 @@ Blockly.BubbleDragger.prototype.updateCursorDuringBubbleDrag_ = function() {
   if (this.wouldDeleteBubble_) {
     this.draggingBubble_.setDeleteStyle(true);
     if (this.deleteArea_ == Blockly.DELETE_AREA_TRASH && trashcan) {
-      trashcan.setOpen_(true);
+      trashcan.setLidOpen(true);
     }
   } else {
     this.draggingBubble_.setDeleteStyle(false);
     if (trashcan) {
-      trashcan.setOpen_(false);
+      trashcan.setLidOpen(false);
     }
   }
 };
@@ -222,10 +211,11 @@ Blockly.BubbleDragger.prototype.endBubbleDrag = function(
   }
   this.workspace_.setResizesEnabled(true);
 
-  if (this.workspace_.toolbox_) {
+  var toolbox = this.workspace_.getToolbox();
+  if (toolbox && typeof toolbox.removeStyle == 'function') {
     var style = this.draggingBubble_.isDeletable() ? 'blocklyToolboxDelete' :
-        'blocklyToolboxGrab';
-    this.workspace_.toolbox_.removeStyle(style);
+                                                     'blocklyToolboxGrab';
+    toolbox.removeStyle(style);
   }
   Blockly.Events.setGroup(false);
 };
@@ -236,7 +226,8 @@ Blockly.BubbleDragger.prototype.endBubbleDrag = function(
  */
 Blockly.BubbleDragger.prototype.fireMoveEvent_ = function() {
   if (this.draggingBubble_.isComment) {
-    var event = new Blockly.Events.CommentMove(this.draggingBubble_);
+    var event = new Blockly.Events.CommentMove(
+        /** @type {!Blockly.WorkspaceCommentSvg} */ (this.draggingBubble_));
     event.setOldCoordinate(this.startXY_);
     event.recordNew();
     Blockly.Events.fire(event);
@@ -250,14 +241,15 @@ Blockly.BubbleDragger.prototype.fireMoveEvent_ = function() {
  * correction for mutator workspaces.
  * This function does not consider differing origins.  It simply scales the
  * input's x and y values.
- * @param {!Blockly.utils.Coordinate} pixelCoord A coordinate with x and y values
- *     in CSS pixel units.
- * @return {!Blockly.utils.Coordinate} The input coordinate divided by the workspace
- *     scale.
+ * @param {!Blockly.utils.Coordinate} pixelCoord A coordinate with x and y
+ *     values in CSS pixel units.
+ * @return {!Blockly.utils.Coordinate} The input coordinate divided by the
+ *     workspace scale.
  * @private
  */
 Blockly.BubbleDragger.prototype.pixelsToWorkspaceUnits_ = function(pixelCoord) {
-  var result = new Blockly.utils.Coordinate(pixelCoord.x / this.workspace_.scale,
+  var result = new Blockly.utils.Coordinate(
+      pixelCoord.x / this.workspace_.scale,
       pixelCoord.y / this.workspace_.scale);
   if (this.workspace_.isMutator) {
     // If we're in a mutator, its scale is always 1, purely because of some
@@ -269,6 +261,7 @@ Blockly.BubbleDragger.prototype.pixelsToWorkspaceUnits_ = function(pixelCoord) {
   }
   return result;
 };
+
 /**
  * Move the bubble onto the drag surface at the beginning of a drag.  Move the
  * drag surface to preserve the apparent location of the bubble.

@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2019 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -42,7 +28,6 @@ goog.require('Blockly.blockRendering.SpacerRow');
 goog.require('Blockly.blockRendering.StatementInput');
 goog.require('Blockly.blockRendering.TopRow');
 goog.require('Blockly.blockRendering.Types');
-goog.require('Blockly.RenderedConnection');
 goog.require('Blockly.utils.object');
 
 
@@ -77,10 +62,49 @@ Blockly.thrasos.RenderInfo.prototype.getRenderer = function() {
 /**
  * @override
  */
+Blockly.thrasos.RenderInfo.prototype.addElemSpacing_ = function() {
+  var hasExternalInputs = false;
+  for (var i = 0, row; (row = this.rows[i]); i++) {
+    if (row.hasExternalInput) {
+      hasExternalInputs = true;
+    }
+  }
+  for (var i = 0, row; (row = this.rows[i]); i++) {
+    var oldElems = row.elements;
+    row.elements = [];
+    // No spacing needed before the corner on the top row or the bottom row.
+    if (row.startsWithElemSpacer()) {
+      // There's a spacer before the first element in the row.
+      row.elements.push(new Blockly.blockRendering.InRowSpacer(
+          this.constants_, this.getInRowSpacing_(null, oldElems[0])));
+    }
+    for (var e = 0; e < oldElems.length - 1; e++) {
+      row.elements.push(oldElems[e]);
+      var spacing = this.getInRowSpacing_(oldElems[e], oldElems[e + 1]);
+      row.elements.push(
+          new Blockly.blockRendering.InRowSpacer(this.constants_, spacing));
+    }
+    row.elements.push(oldElems[oldElems.length - 1]);
+    if (row.endsWithElemSpacer()) {
+      var spacing = this.getInRowSpacing_(oldElems[oldElems.length - 1], null);
+      if (hasExternalInputs && row.hasDummyInput) {
+        spacing += this.constants_.TAB_WIDTH;
+      }
+      // There's a spacer after the last element in the row.
+      row.elements.push(new Blockly.blockRendering.InRowSpacer(
+          this.constants_, spacing));
+    }
+  }
+};
+
+/**
+ * @override
+ */
 Blockly.thrasos.RenderInfo.prototype.getInRowSpacing_ = function(prev, next) {
   if (!prev) {
     // Between an editable field and the beginning of the row.
-    if (next && Blockly.blockRendering.Types.isField(next) && next.isEditable) {
+    if (next && Blockly.blockRendering.Types.isField(next) &&
+        (/** @type Blockly.blockRendering.Field */ (next)).isEditable) {
       return this.constants_.MEDIUM_PADDING;
     }
     // Inline input at the beginning of the row.
@@ -97,7 +121,8 @@ Blockly.thrasos.RenderInfo.prototype.getInRowSpacing_ = function(prev, next) {
   // Spacing between a non-input and the end of the row.
   if (!Blockly.blockRendering.Types.isInput(prev) && !next) {
     // Between an editable field and the end of the row.
-    if (Blockly.blockRendering.Types.isField(prev) && prev.isEditable) {
+    if (Blockly.blockRendering.Types.isField(prev) &&
+        (/** @type Blockly.blockRendering.Field */ (prev)).isEditable) {
       return this.constants_.MEDIUM_PADDING;
     }
     // Padding at the end of an icon-only row to make the block shape clearer.
@@ -138,7 +163,8 @@ Blockly.thrasos.RenderInfo.prototype.getInRowSpacing_ = function(prev, next) {
   if (!Blockly.blockRendering.Types.isInput(prev) &&
       next && Blockly.blockRendering.Types.isInput(next)) {
     // Between an editable field and an input.
-    if (prev.isEditable) {
+    if (Blockly.blockRendering.Types.isField(prev) &&
+        (/** @type Blockly.blockRendering.Field */ (prev)).isEditable) {
       if (Blockly.blockRendering.Types.isInlineInput(next)) {
         return this.constants_.SMALL_PADDING;
       } else if (Blockly.blockRendering.Types.isExternalInput(next)) {
@@ -164,9 +190,9 @@ Blockly.thrasos.RenderInfo.prototype.getInRowSpacing_ = function(prev, next) {
 
   // Spacing between an inline input and a field.
   if (Blockly.blockRendering.Types.isInlineInput(prev) &&
-      next && !Blockly.blockRendering.Types.isInput(next)) {
+      next && Blockly.blockRendering.Types.isField(next)) {
     // Editable field after inline input.
-    if (next.isEditable) {
+    if ((/** @type Blockly.blockRendering.Field */ (next)).isEditable) {
       return this.constants_.MEDIUM_PADDING;
     } else {
       // Noneditable field after inline input.
@@ -192,9 +218,10 @@ Blockly.thrasos.RenderInfo.prototype.getInRowSpacing_ = function(prev, next) {
   }
 
   // Spacing between two fields of the same editability.
-  if (!Blockly.blockRendering.Types.isInput(prev) &&
-      next && !Blockly.blockRendering.Types.isInput(next) &&
-      (prev.isEditable == next.isEditable)) {
+  if (Blockly.blockRendering.Types.isField(prev) &&
+      next && Blockly.blockRendering.Types.isField(next) &&
+      ((/** @type Blockly.blockRendering.Field */ (prev)).isEditable ==
+          (/** @type Blockly.blockRendering.Field */ (next)).isEditable)) {
     return this.constants_.LARGE_PADDING;
   }
 
@@ -204,37 +231,6 @@ Blockly.thrasos.RenderInfo.prototype.getInRowSpacing_ = function(prev, next) {
   }
 
   return this.constants_.MEDIUM_PADDING;
-};
-
-/**
- * @override
- */
-Blockly.thrasos.RenderInfo.prototype.addAlignmentPadding_ = function(row, missingSpace) {
-  var firstSpacer = row.getFirstSpacer();
-  var lastSpacer = row.getLastSpacer();
-  if (row.hasExternalInput || row.hasStatement) {
-    row.widthWithConnectedBlocks += missingSpace;
-  }
-
-  var input = row.getLastInput();
-  if (input) {
-    // Decide where the extra padding goes.
-    if (input.align == Blockly.ALIGN_LEFT) {
-      // Add padding to the end of the row.
-      lastSpacer.width += missingSpace;
-    } else if (input.align == Blockly.ALIGN_CENTRE) {
-      // Split the padding between the beginning and end of the row.
-      firstSpacer.width += missingSpace / 2;
-      lastSpacer.width += missingSpace / 2;
-    } else if (input.align == Blockly.ALIGN_RIGHT) {
-      // Add padding at the beginning of the row.
-      firstSpacer.width += missingSpace;
-    }
-  } else {
-    // Default to left-aligning if there's no input to say where to align.
-    lastSpacer.width += missingSpace;
-  }
-  row.width += missingSpace;
 };
 
 /**
@@ -261,7 +257,7 @@ Blockly.thrasos.RenderInfo.prototype.getSpacerRowHeight_ = function(
   if (prev.hasStatement && next.hasStatement) {
     return this.constants_.LARGE_PADDING;
   }
-  if (next.hasDummyInput) {
+  if (prev.hasDummyInput || next.hasDummyInput) {
     return this.constants_.LARGE_PADDING;
   }
   return this.constants_.MEDIUM_PADDING;
@@ -271,6 +267,9 @@ Blockly.thrasos.RenderInfo.prototype.getSpacerRowHeight_ = function(
  * @override
  */
 Blockly.thrasos.RenderInfo.prototype.getElemCenterline_ = function(row, elem) {
+  if (Blockly.blockRendering.Types.isSpacer(elem)) {
+    return row.yPos + elem.height / 2;
+  }
   if (Blockly.blockRendering.Types.isBottomRow(row)) {
     var baseline = row.yPos + row.height - row.descenderHeight;
     if (Blockly.blockRendering.Types.isNextConnection(elem)) {
@@ -321,12 +320,14 @@ Blockly.thrasos.RenderInfo.prototype.finalize_ = function() {
       this.bottomRow.height += diff;
       yCursor += diff;
     }
-    var xCursor = row.xPos;
-    for (var j = 0, elem; (elem = row.elements[j]); j++) {
-      elem.xPos = xCursor;
-      elem.centerline = this.getElemCenterline_(row, elem);
-      xCursor += elem.width;
-    }
+    this.recordElemPositions_(row);
+  }
+  if (this.outputConnection && this.block_.nextConnection &&
+      this.block_.nextConnection.isConnected()) {
+    // Include width of connected block in value to stack width measurement.
+    widestRowWithConnectedBlocks =
+        Math.max(widestRowWithConnectedBlocks,
+            this.block_.nextConnection.targetBlock().getHeightWidth().width);
   }
 
   this.bottomRow.baseline = yCursor - this.bottomRow.descenderHeight;

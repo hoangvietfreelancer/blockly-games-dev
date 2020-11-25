@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2017 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -90,7 +76,7 @@ Blockly.Extensions.registerMixin = function(name, mixinObj) {
  * @param {!Object} mixinObj The values to mix in.
  * @param {(function())=} opt_helperFn An optional function to apply after
  *     mixing in the object.
- * @param {Array.<string>=} opt_blockList A list of blocks to appear in the
+ * @param {!Array.<string>=} opt_blockList A list of blocks to appear in the
  *     flyout of the mutator dialog.
  * @throws {Error} if the mutation is invalid or can't be applied to the block.
  */
@@ -117,7 +103,7 @@ Blockly.Extensions.registerMutator = function(name, mixinObj, opt_helperFn,
       if (!Blockly.Mutator) {
         throw Error(errorPrefix + 'Missing require for Blockly.Mutator');
       }
-      this.setMutator(new Blockly.Mutator(opt_blockList));
+      this.setMutator(new Blockly.Mutator(opt_blockList || []));
     }
     // Mixin the object.
     this.mixin(mixinObj);
@@ -126,6 +112,19 @@ Blockly.Extensions.registerMutator = function(name, mixinObj, opt_helperFn,
       opt_helperFn.apply(this);
     }
   });
+};
+
+/**
+ * Unregisters the extension registered with the given name.
+ * @param {string} name The name of the extension to unregister.
+ */
+Blockly.Extensions.unregister = function(name) {
+  if (Blockly.Extensions.ALL_[name]) {
+    delete Blockly.Extensions.ALL_[name];
+  } else {
+    console.warn('No extension mapping for name "' + name +
+        '" found to unregister');
+  }
 };
 
 /**
@@ -155,7 +154,8 @@ Blockly.Extensions.apply = function(name, block, isMutator) {
     var errorPrefix = 'Error after applying mutator "' + name + '": ';
     Blockly.Extensions.checkBlockHasMutatorProperties_(errorPrefix, block);
   } else {
-    if (!Blockly.Extensions.mutatorPropertiesMatch_(mutatorProperties, block)) {
+    if (!Blockly.Extensions.mutatorPropertiesMatch_(
+        /** @type {!Array.<Object>} */ (mutatorProperties), block)) {
       throw Error('Error when applying extension "' + name + '": ' +
           'mutation properties changed when applying a non-mutator extension.');
     }
@@ -317,7 +317,7 @@ Blockly.Extensions.mutatorPropertiesMatch_ = function(oldProperties, block) {
  *     to the lookup table.
  * @param {!Object.<string, string>} lookupTable The table of field values to
  *     tooltip text.
- * @return {Function} The extension function.
+ * @return {!Function} The extension function.
  */
 Blockly.Extensions.buildTooltipForDropdown = function(dropdownName,
     lookupTable) {
@@ -342,17 +342,17 @@ Blockly.Extensions.buildTooltipForDropdown = function(dropdownName,
    * @this {Blockly.Block}
    */
   var extensionFn = function() {
-    if (this.type && blockTypesChecked.indexOf(this.type) === -1) {
+    if (this.type && blockTypesChecked.indexOf(this.type) == -1) {
       Blockly.Extensions.checkDropdownOptionsInTable_(
           this, dropdownName, lookupTable);
       blockTypesChecked.push(this.type);
     }
 
     this.setTooltip(function() {
-      var value = this.getFieldValue(dropdownName);
+      var value = String(this.getFieldValue(dropdownName));
       var tooltip = lookupTable[value];
       if (tooltip == null) {
-        if (blockTypesChecked.indexOf(this.type) === -1) {
+        if (blockTypesChecked.indexOf(this.type) == -1) {
           // Warn for missing values on generated tooltips.
           var warning = 'No tooltip mapping for value ' + value +
               ' of field ' + dropdownName;
@@ -401,7 +401,7 @@ Blockly.Extensions.checkDropdownOptionsInTable_ = function(block, dropdownName,
  * @param {string} msgTemplate The template form to of the message text, with
  *     %1 placeholder.
  * @param {string} fieldName The field with the replacement text.
- * @return {Function} The extension function.
+ * @return {!Function} The extension function.
  */
 Blockly.Extensions.buildTooltipWithFieldText = function(msgTemplate,
     fieldName) {

@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2012 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2012 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -33,8 +19,11 @@
 goog.provide('Blockly.utils');
 
 goog.require('Blockly.Msg');
+goog.require('Blockly.constants');
+goog.require('Blockly.utils.colour');
 goog.require('Blockly.utils.Coordinate');
 goog.require('Blockly.utils.global');
+goog.require('Blockly.utils.Rect');
 goog.require('Blockly.utils.string');
 goog.require('Blockly.utils.style');
 goog.require('Blockly.utils.userAgent');
@@ -60,7 +49,8 @@ Blockly.utils.isTargetInput = function(e) {
          e.target.type == 'number' || e.target.type == 'email' ||
          e.target.type == 'password' || e.target.type == 'search' ||
          e.target.type == 'tel' || e.target.type == 'url' ||
-         e.target.isContentEditable;
+         e.target.isContentEditable ||
+         (e.target.dataset && e.target.dataset.isTextInput == 'true');
 };
 
 /**
@@ -124,7 +114,7 @@ Blockly.utils.getInjectionDivXY_ = function(element) {
     if ((' ' + classes + ' ').indexOf(' injectionDiv ') != -1) {
       break;
     }
-    element = element.parentNode;
+    element = /** @type {!Element} */ (element.parentNode);
   }
   return new Blockly.utils.Coordinate(x, y);
 };
@@ -193,6 +183,7 @@ Blockly.utils.mouseToSvg = function(e, svg, matrix) {
 Blockly.utils.getScrollDeltaPixels = function(e) {
   switch (e.deltaMode) {
     case 0x00:  // Pixel mode.
+    default:
       return {
         x: e.deltaX,
         y: e.deltaY
@@ -239,7 +230,7 @@ Blockly.utils.replaceMessageReferences = function(message) {
   var interpolatedResult = Blockly.utils.tokenizeInterpolation_(message, false);
   // When parseInterpolationTokens == false, interpolatedResult should be at
   // most length 1.
-  return interpolatedResult.length ? interpolatedResult[0] : '';
+  return interpolatedResult.length ? String(interpolatedResult[0]) : '';
 };
 
 /**
@@ -260,7 +251,7 @@ Blockly.utils.checkMessageReferences = function(message) {
   for (var i = 0; i < m.length; i++) {
     var msgKey = m[i].toUpperCase();
     if (msgTable[msgKey.slice(6, -1)] == undefined) {
-      console.log('WARNING: No message string for ' + m[i] + ' in ' + message);
+      console.warn('No message string for ' + m[i] + ' in ' + message);
       validSoFar = false;  // Continue to report other errors.
     }
   }
@@ -507,19 +498,19 @@ Blockly.utils.runAfterPageLoad = function(fn) {
 /**
  * Get the position of the current viewport in window coordinates.  This takes
  * scroll into account.
- * @return {!Object} An object containing window width, height, and scroll
- *     position in window coordinates.
+ * @return {!Blockly.utils.Rect} An object containing window width, height, and
+ *     scroll position in window coordinates.
  * @package
  */
 Blockly.utils.getViewportBBox = function() {
   // Pixels, in window coordinates.
   var scrollOffset = Blockly.utils.style.getViewportPageOffset();
-  return {
-    right: document.documentElement.clientWidth + scrollOffset.x,
-    bottom: document.documentElement.clientHeight + scrollOffset.y,
-    top: scrollOffset.y,
-    left: scrollOffset.x
-  };
+  return new Blockly.utils.Rect(
+      scrollOffset.y,
+      document.documentElement.clientHeight + scrollOffset.y,
+      scrollOffset.x,
+      document.documentElement.clientWidth + scrollOffset.x
+  );
 };
 
 /**
@@ -576,7 +567,7 @@ Blockly.utils.getBlockTypeCounts = function(block, opt_stripFollowing) {
       descendants.splice(index, descendants.length - index);
     }
   }
-  for (var i = 0, checkBlock; checkBlock = descendants[i]; i++) {
+  for (var i = 0, checkBlock; (checkBlock = descendants[i]); i++) {
     if (typeCountsMap[checkBlock.type]) {
       typeCountsMap[checkBlock.type]++;
     } else {
@@ -590,7 +581,7 @@ Blockly.utils.getBlockTypeCounts = function(block, opt_stripFollowing) {
  * Converts screen coordinates to workspace coordinates.
  * @param {Blockly.WorkspaceSvg} ws The workspace to find the coordinates on.
  * @param {Blockly.utils.Coordinate} screenCoordinates The screen coordinates to
- * be converted to workspace coordintaes
+ * be converted to workspace coordinates
  * @return {Blockly.utils.Coordinate} The workspace coordinates.
  * @package
  */
@@ -620,4 +611,42 @@ Blockly.utils.screenToWsCoordinates = function(ws, screenCoordinates) {
   // The position in main workspace coordinates.
   var finalOffsetMainWs = finalOffsetPixels.scale(1 / ws.scale);
   return finalOffsetMainWs;
+};
+
+/**
+ * Parse a block colour from a number or string, as provided in a block
+ * definition.
+ * @param {number|string} colour HSV hue value (0 to 360), #RRGGBB string,
+ *     or a message reference string pointing to one of those two values.
+ * @return {{hue: ?number, hex: string}} An object containing the colour as
+ *     a #RRGGBB string, and the hue if the input was an HSV hue value.
+ * @throws {Error} If the colour cannot be parsed.
+ */
+Blockly.utils.parseBlockColour = function(colour) {
+  var dereferenced = (typeof colour == 'string') ?
+      Blockly.utils.replaceMessageReferences(colour) : colour;
+
+  var hue = Number(dereferenced);
+  if (!isNaN(hue) && 0 <= hue && hue <= 360) {
+    return {
+      hue: hue,
+      hex: Blockly.utils.colour.hsvToHex(hue, Blockly.HSV_SATURATION,
+          Blockly.HSV_VALUE * 255)
+    };
+  } else {
+    var hex = Blockly.utils.colour.parse(dereferenced);
+    if (hex) {
+      // Only store hue if colour is set as a hue.
+      return {
+        hue: null,
+        hex: hex
+      };
+    } else {
+      var errorMsg = 'Invalid colour: "' + dereferenced + '"';
+      if (colour != dereferenced) {
+        errorMsg += ' (from "' + colour + '")';
+      }
+      throw Error(errorMsg);
+    }
+  }
 };

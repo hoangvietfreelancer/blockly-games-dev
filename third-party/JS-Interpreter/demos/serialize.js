@@ -1,20 +1,7 @@
 /**
  * @license
- * JavaScript Interpreter: serialization and deserialization
- *
- * Copyright 2017 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -101,6 +88,9 @@ function deserialize(json, interpreter) {
         break;
       case 'PseudoObject':
         obj = new Interpreter.Object(null);
+        break;
+      case 'Scope':
+        obj = new Interpreter.Scope(undefined, undefined, undefined);
         break;
       case 'State':
         obj = new Interpreter.State(undefined, undefined);
@@ -192,7 +182,8 @@ function serialize(interpreter) {
     'SYNTAX_ERROR',
     'TYPE_ERROR',
     'URI_ERROR',
-    'global',
+    'globalScope',
+    'globalObject',
     'stateStack'
   ];
   var root = Object.create(null);
@@ -248,6 +239,9 @@ function serialize(interpreter) {
         continue;  // No need to index properties.
       case Interpreter.Object.prototype:
         jsonObj['type'] = 'PseudoObject';
+        break;
+      case Interpreter.Scope.prototype:
+        jsonObj['type'] = 'Scope';
         break;
       case Interpreter.State.prototype:
         jsonObj['type'] = 'State';

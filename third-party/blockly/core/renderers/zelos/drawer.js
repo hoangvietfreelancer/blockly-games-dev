@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2019 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -31,6 +17,8 @@ goog.require('Blockly.blockRendering.Drawer');
 goog.require('Blockly.blockRendering.Types');
 goog.require('Blockly.utils.object');
 goog.require('Blockly.zelos.RenderInfo');
+
+goog.requireType('Blockly.zelos.PathObject');
 
 
 /**
@@ -52,9 +40,38 @@ Blockly.utils.object.inherits(Blockly.zelos.Drawer,
 /**
  * @override
  */
+Blockly.zelos.Drawer.prototype.draw = function() {
+  var pathObject =
+    /** @type {!Blockly.zelos.PathObject} */ (this.block_.pathObject);
+  pathObject.beginDrawing();
+  this.hideHiddenIcons_();
+  this.drawOutline_();
+  this.drawInternals_();
+
+  pathObject.setPath(this.outlinePath_ + '\n' + this.inlinePath_);
+  if (this.info_.RTL) {
+    pathObject.flipRTL();
+  }
+  if (Blockly.blockRendering.useDebugger) {
+    this.block_.renderingDebugger.drawDebug(this.block_, this.info_);
+  }
+  this.recordSizeOnBlock_();
+  if (this.info_.outputConnection) {
+    // Store the output connection shape type for parent blocks to use during
+    // rendering.
+    pathObject.outputShapeType = this.info_.outputConnection.shape.type;
+  }
+  pathObject.endDrawing();
+};
+
+/**
+ * @override
+ */
 Blockly.zelos.Drawer.prototype.drawOutline_ = function() {
   if (this.info_.outputConnection &&
-      this.info_.outputConnection.isDynamic()) {
+      this.info_.outputConnection.isDynamicShape &&
+      !this.info_.hasStatementInput &&
+      !this.info_.bottomRow.hasNextConnection) {
     this.drawFlatTop_();
     this.drawRightDynamicConnection_();
     this.drawFlatBottom_();
@@ -65,68 +82,15 @@ Blockly.zelos.Drawer.prototype.drawOutline_ = function() {
 };
 
 /**
- * Add steps for the top corner of the block, taking into account
- * details such as hats and rounded corners.
- * @protected
+ * @override
  */
-Blockly.zelos.Drawer.prototype.drawTop_ = function() {
-  var topRow = this.info_.topRow;
-  var elements = topRow.elements;
-
-  this.positionPreviousConnection_();
-  this.outlinePath_ +=
-      Blockly.utils.svgPaths.moveBy(topRow.xPos, this.info_.startY);
-  for (var i = 0, elem; (elem = elements[i]); i++) {
-    if (Blockly.blockRendering.Types.isLeftRoundedCorner(elem)) {
-      this.outlinePath_ +=
-          this.constants_.OUTSIDE_CORNERS.topLeft;
-    } else if (Blockly.blockRendering.Types.isRightRoundedCorner(elem)) {
-      this.outlinePath_ +=
-          this.constants_.OUTSIDE_CORNERS.topRight;
-    } else if (Blockly.blockRendering.Types.isPreviousConnection(elem)) {
-      this.outlinePath_ += elem.shape.pathLeft;
-    } else if (Blockly.blockRendering.Types.isHat(elem)) {
-      this.outlinePath_ += this.constants_.START_HAT.path;
-    } else if (Blockly.blockRendering.Types.isSpacer(elem)) {
-      this.outlinePath_ += Blockly.utils.svgPaths.lineOnAxis('h', elem.width);
-    }
-    // No branch for a square corner because it's a no-op.
+Blockly.zelos.Drawer.prototype.drawLeft_ = function() {
+  if (this.info_.outputConnection &&
+      this.info_.outputConnection.isDynamicShape) {
+    this.drawLeftDynamicConnection_();
+  } else {
+    Blockly.zelos.Drawer.superClass_.drawLeft_.call(this);
   }
-  this.outlinePath_ += Blockly.utils.svgPaths.lineOnAxis('v', topRow.height);
-};
-
-
-/**
- * Add steps for the bottom edge of a block, possibly including a notch
- * for the next connection
- * @protected
- */
-Blockly.zelos.Drawer.prototype.drawBottom_ = function() {
-  var bottomRow = this.info_.bottomRow;
-  var elems = bottomRow.elements;
-  this.positionNextConnection_();
-
-  var rightCornerYOffset = 0;
-  var outlinePath = '';
-  for (var i = elems.length - 1, elem; (elem = elems[i]); i--) {
-    if (Blockly.blockRendering.Types.isNextConnection(elem)) {
-      outlinePath += elem.shape.pathRight;
-    } else if (Blockly.blockRendering.Types.isLeftSquareCorner(elem)) {
-      outlinePath += Blockly.utils.svgPaths.lineOnAxis('H', bottomRow.xPos);
-    } else if (Blockly.blockRendering.Types.isLeftRoundedCorner(elem)) {
-      outlinePath += this.constants_.OUTSIDE_CORNERS.bottomLeft;
-    } else if (Blockly.blockRendering.Types.isRightRoundedCorner(elem)) {
-      outlinePath += this.constants_.OUTSIDE_CORNERS.bottomRight;
-      rightCornerYOffset = this.constants_.INSIDE_CORNERS.rightHeight;
-    } else if (Blockly.blockRendering.Types.isSpacer(elem)) {
-      outlinePath += Blockly.utils.svgPaths.lineOnAxis('h', elem.width * -1);
-    }
-  }
-
-  this.outlinePath_ +=
-        Blockly.utils.svgPaths.lineOnAxis('V',
-            bottomRow.baseline - rightCornerYOffset);
-  this.outlinePath_ += outlinePath;
 };
 
 /**
@@ -137,18 +101,21 @@ Blockly.zelos.Drawer.prototype.drawBottom_ = function() {
  * @protected
  */
 Blockly.zelos.Drawer.prototype.drawRightSideRow_ = function(row) {
-  if (row.type & Blockly.blockRendering.Types.getType('BEFORE_STATEMENT_SPACER_ROW')) {
-    var remainingHeight = row.height - this.constants_.INSIDE_CORNERS.rightWidth;
+  if (row.height <= 0) {
+    return;
+  }
+  if (row.precedesStatement || row.followsStatement) {
+    var cornerHeight = this.constants_.INSIDE_CORNERS.rightHeight;
+    var remainingHeight = row.height -
+        (row.precedesStatement ? cornerHeight : 0);
     this.outlinePath_ +=
+        (row.followsStatement ?
+            this.constants_.INSIDE_CORNERS.pathBottomRight : '') +
         (remainingHeight > 0 ?
-            Blockly.utils.svgPaths.lineOnAxis('V', row.yPos + remainingHeight) : '') +
-        this.constants_.INSIDE_CORNERS.pathTopRight;
-  } else if (row.type & Blockly.blockRendering.Types.getType('AFTER_STATEMENT_SPACER_ROW')) {
-    var remainingHeight = row.height - this.constants_.INSIDE_CORNERS.rightWidth;
-    this.outlinePath_ +=
-        this.constants_.INSIDE_CORNERS.pathBottomRight +
-        (remainingHeight > 0 ?
-            Blockly.utils.svgPaths.lineOnAxis('V', row.yPos + row.height) : '');
+            Blockly.utils.svgPaths
+                .lineOnAxis('V', row.yPos + remainingHeight) : '') +
+        (row.precedesStatement ?
+            this.constants_.INSIDE_CORNERS.pathTopRight : '');
   } else {
     this.outlinePath_ +=
         Blockly.utils.svgPaths.lineOnAxis('V', row.yPos + row.height);
@@ -211,6 +178,56 @@ Blockly.zelos.Drawer.prototype.drawFlatBottom_ = function() {
  * @override
  */
 Blockly.zelos.Drawer.prototype.drawInlineInput_ = function(input) {
-  // Don't draw an inline input.
   this.positionInlineInputConnection_(input);
+
+  var inputName = input.input.name;
+  if (input.connectedBlock || this.info_.isInsertionMarker) {
+    return;
+  }
+
+  var width = input.width - (input.connectionWidth * 2);
+  var height = input.height;
+  var yPos = input.centerline - height / 2;
+
+  var connectionRight = input.xPos + input.connectionWidth;
+
+  var outlinePath = Blockly.utils.svgPaths.moveTo(connectionRight, yPos) +
+      Blockly.utils.svgPaths.lineOnAxis('h', width) +
+      input.shape.pathRightDown(input.height) +
+      Blockly.utils.svgPaths.lineOnAxis('h', -width) +
+      input.shape.pathUp(input.height) +
+      'z';
+  this.block_.pathObject.setOutlinePath(inputName, outlinePath);
+};
+
+/**
+ * @override
+ */
+Blockly.zelos.Drawer.prototype.drawStatementInput_ = function(row) {
+  var input = row.getLastInput();
+  // Where to start drawing the notch, which is on the right side in LTR.
+  var x = input.xPos + input.notchOffset + input.shape.width;
+
+  var innerTopLeftCorner =
+      input.shape.pathRight +
+      Blockly.utils.svgPaths.lineOnAxis('h',
+          -(input.notchOffset - this.constants_.INSIDE_CORNERS.width)) +
+      this.constants_.INSIDE_CORNERS.pathTop;
+
+  var innerHeight =
+      row.height - (2 * this.constants_.INSIDE_CORNERS.height);
+
+  var innerBottomLeftCorner =
+    this.constants_.INSIDE_CORNERS.pathBottom +
+    Blockly.utils.svgPaths.lineOnAxis('h',
+        (input.notchOffset - this.constants_.INSIDE_CORNERS.width)) +
+    (input.connectedBottomNextConnection ? '' : input.shape.pathLeft);
+
+  this.outlinePath_ += Blockly.utils.svgPaths.lineOnAxis('H', x) +
+      innerTopLeftCorner +
+      Blockly.utils.svgPaths.lineOnAxis('v', innerHeight) +
+      innerBottomLeftCorner +
+      Blockly.utils.svgPaths.lineOnAxis('H', row.xPos + row.width);
+
+  this.positionStatementInputConnection_(row);
 };

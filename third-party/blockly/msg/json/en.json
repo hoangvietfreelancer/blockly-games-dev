@@ -1,7 +1,7 @@
 {
 	"@metadata": {
 		"author": "Ellen Spertus <ellen.spertus@gmail.com>",
-		"lastupdated": "2019-09-10 15:39:18.911383",
+		"lastupdated": "2020-09-24 04:06:08.758361",
 		"locale": "en",
 		"messagedocumentation" : "qqq"
 	},
@@ -403,5 +403,6 @@
 	"PROCEDURES_IFRETURN_HELPURL": "http://c2.com/cgi/wiki?GuardClause",
 	"PROCEDURES_IFRETURN_WARNING": "Warning: This block may be used only within a function definition.",
 	"WORKSPACE_COMMENT_DEFAULT_TEXT": "Say something...",
+	"WORKSPACE_ARIA_LABEL": "Blockly Workspace",
 	"COLLAPSED_WARNINGS_WARNING": "Collapsed blocks contain warnings."
 }

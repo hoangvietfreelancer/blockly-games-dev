@@ -1,20 +1,7 @@
 /**
  * @license
- * JavaScript Interpreter
- *
- * Copyright 2013 Google Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2013 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -35,7 +22,14 @@ var Interpreter = function(code, opt_initFunc) {
   if (typeof code === 'string') {
     code = acorn.parse(code, Interpreter.PARSE_OPTIONS);
   }
-  this.ast = code;
+  // Get a handle on Acorn's node_t object.
+  this.nodeConstructor = code.constructor;
+  // Clone the root 'Program' node so that the AST may be modified.
+  var ast = new this.nodeConstructor({options:{}});
+  for (var prop in code) {
+    ast[prop] = (prop === 'body') ? code[prop].slice() : code[prop];
+  }
+  this.ast = ast;
   this.initFunc_ = opt_initFunc;
   this.paused_ = false;
   this.polyfills_ = [];
@@ -53,28 +47,39 @@ var Interpreter = function(code, opt_initFunc) {
     }
   }
   // Create and initialize the global scope.
-  this.global = this.createScope(this.ast, null);
+  this.globalScope = this.createScope(this.ast, null);
+  this.globalObject = this.globalScope.object;
   // Run the polyfills.
   this.ast = acorn.parse(this.polyfills_.join('\n'), Interpreter.PARSE_OPTIONS);
   this.polyfills_ = undefined;  // Allow polyfill strings to garbage collect.
-  this.stripLocations_(this.ast, undefined, undefined);
-  var state = new Interpreter.State(this.ast, this.global);
+  Interpreter.stripLocations_(this.ast, undefined, undefined);
+  var state = new Interpreter.State(this.ast, this.globalScope);
   state.done = false;
   this.stateStack = [state];
   this.run();
   this.value = undefined;
   // Point at the main program.
-  this.ast = code;
-  var state = new Interpreter.State(this.ast, this.global);
+  this.ast = ast;
+  var state = new Interpreter.State(this.ast, this.globalScope);
   state.done = false;
   this.stateStack.length = 0;
   this.stateStack[0] = state;
-  // Get a handle on Acorn's node_t object.  It's tricky to access.
-  this.nodeConstructor = state.node.constructor;
   // Preserve publicly properties from being pruned/renamed by JS compilers.
   // Add others as needed.
   this['stateStack'] = this.stateStack;
 };
+
+/**
+  * Completion Value Types.
+  * @enum {number}
+  */
+ Interpreter.Completion = {
+   NORMAL: 0,
+   BREAK: 1,
+   CONTINUE: 2,
+   RETURN: 3,
+   THROW: 4
+ };
 
 /**
  * @const {!Object} Configuration used for all Acorn parsing.
@@ -188,10 +193,65 @@ Interpreter.WORKER_CODE = [
         "result = [regexp.exec(data[3]), data[1].lastIndex];",
         "break;",
       "default:",
-        "throw 'Unknown RegExp operation: ' + data[0];",
+        "throw Error('Unknown RegExp operation: ' + data[0]);",
     "}",
     "postMessage(result);",
   "};"];
+
+/**
+ * Is a value a legal integer for an array length?
+ * @param {Interpreter.Value} x Value to check.
+ * @return {number} Zero, or a positive integer if the value can be
+ *     converted to such.  NaN otherwise.
+ */
+Interpreter.legalArrayLength = function(x) {
+  var n = x >>> 0;
+  // Array length must be between 0 and 2^32-1 (inclusive).
+  return (n === Number(x)) ? n : NaN;
+};
+
+/**
+ * Is a value a legal integer for an array index?
+ * @param {Interpreter.Value} x Value to check.
+ * @return {number} Zero, or a positive integer if the value can be
+ *     converted to such.  NaN otherwise.
+ */
+Interpreter.legalArrayIndex = function(x) {
+  var n = x >>> 0;
+  // Array index cannot be 2^32-1, otherwise length would be 2^32.
+  // 0xffffffff is 2^32-1.
+  return (String(n) === String(x) && n !== 0xffffffff) ? n : NaN;
+};
+
+/**
+ * Remove start and end values from AST, or set start and end values to a
+ * constant value.  Used to remove highlighting from polyfills and to set
+ * highlighting in an eval to cover the entire eval expression.
+ * @param {!Object} node AST node.
+ * @param {number=} start Starting character of all nodes, or undefined.
+ * @param {number=} end Ending character of all nodes, or undefined.
+ * @private
+ */
+Interpreter.stripLocations_ = function(node, start, end) {
+  if (start) {
+    node['start'] = start;
+  } else {
+    delete node['start'];
+  }
+  if (end) {
+    node['end'] = end;
+  } else {
+    delete node['end'];
+  }
+  for (var name in node) {
+    if (node.hasOwnProperty(name)) {
+      var prop = node[name];
+      if (prop && typeof prop === 'object') {
+        Interpreter.stripLocations_(prop, start, end);
+      }
+    }
+  }
+};
 
 /**
  * Some pathological regular expressions can take geometric time.
@@ -200,13 +260,25 @@ Interpreter.WORKER_CODE = [
  * 1 - execute natively (risk of unresponsive program).
  * 2 - execute in separate thread (not supported by IE 9).
  */
-Interpreter.prototype.REGEXP_MODE = 2;
+Interpreter.prototype['REGEXP_MODE'] = 2;
 
 /**
  * If REGEXP_MODE = 2, the length of time (in ms) to allow a RegExp
  * thread to execute before terminating it.
  */
-Interpreter.prototype.REGEXP_THREAD_TIMEOUT = 1000;
+Interpreter.prototype['REGEXP_THREAD_TIMEOUT'] = 1000;
+
+/**
+ * Flag indicating that a getter function needs to be called immediately.
+ * @private
+ */
+Interpreter.prototype.getterStep_ = false;
+
+/**
+ * Flag indicating that a setter function needs to be called immediately.
+ * @private
+ */
+Interpreter.prototype.setterStep_ = false;
 
 /**
  * Add more code to the interpreter.
@@ -225,9 +297,7 @@ Interpreter.prototype.appendCode = function(code) {
   }
   this.populateScope_(code, state.scope);
   // Append the new program to the old one.
-  for (var i = 0, node; (node = code['body'][i]); i++) {
-    state.node['body'].push(node);
-  }
+  Array.prototype.push.apply(state.node['body'], code['body']);
   state.done = false;
 };
 
@@ -237,32 +307,39 @@ Interpreter.prototype.appendCode = function(code) {
  */
 Interpreter.prototype.step = function() {
   var stack = this.stateStack;
-  var state = stack[stack.length - 1];
-  if (!state) {
-    return false;
-  }
-  var node = state.node, type = node['type'];
-  if (type === 'Program' && state.done) {
-    return false;
-  } else if (this.paused_) {
-    return true;
-  }
-  try {
-    var nextState = this.stepFunctions_[type](stack, state, node);
-  } catch (e) {
-    // Eat any step errors.  They have been thrown on the stack.
-    if (e !== Interpreter.STEP_ERROR) {
-      // Uh oh.  This is a real error in the JS-Interpreter.  Rethrow.
-      throw e;
+  do {
+    var state = stack[stack.length - 1];
+    if (!state) {
+      return false;
     }
-  }
-  if (nextState) {
-    stack.push(nextState);
-  }
-  if (!node['end']) {
-    // This is polyfill code.  Keep executing until we arrive at user code.
-    return this.step();
-  }
+    var node = state.node, type = node['type'];
+    if (type === 'Program' && state.done) {
+      return false;
+    } else if (this.paused_) {
+      return true;
+    }
+    try {
+      var nextState = this.stepFunctions_[type](stack, state, node);
+    } catch (e) {
+      // Eat any step errors.  They have been thrown on the stack.
+      if (e !== Interpreter.STEP_ERROR) {
+        // Uh oh.  This is a real error in the JS-Interpreter.  Rethrow.
+        throw e;
+      }
+    }
+    if (nextState) {
+      stack.push(nextState);
+    }
+    if (this.getterStep_) {
+      // Getter from this step was not handled.
+      throw Error('Getter not supported in this context');
+    }
+    if (this.setterStep_) {
+      // Setter from this step was not handled.
+      throw Error('Setter not supported in this context');
+    }
+    // This may be polyfill code.  Keep executing until we arrive at user code.
+  } while (!node['end']);
   return true;
 };
 
@@ -277,62 +354,62 @@ Interpreter.prototype.run = function() {
 };
 
 /**
- * Initialize the global scope with buitin properties and functions.
- * @param {!Interpreter.Object} scope Global scope.
+ * Initialize the global object with buitin properties and functions.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initGlobalScope = function(scope) {
+Interpreter.prototype.initGlobal = function(globalObject) {
   // Initialize uneditable global properties.
-  this.setProperty(scope, 'NaN', NaN,
+  this.setProperty(globalObject, 'NaN', NaN,
                    Interpreter.READONLY_DESCRIPTOR);
-  this.setProperty(scope, 'Infinity', Infinity,
+  this.setProperty(globalObject, 'Infinity', Infinity,
                    Interpreter.READONLY_DESCRIPTOR);
-  this.setProperty(scope, 'undefined', undefined,
+  this.setProperty(globalObject, 'undefined', undefined,
                    Interpreter.READONLY_DESCRIPTOR);
-  this.setProperty(scope, 'window', scope,
+  this.setProperty(globalObject, 'window', globalObject,
                    Interpreter.READONLY_DESCRIPTOR);
-  this.setProperty(scope, 'this', scope,
+  this.setProperty(globalObject, 'this', globalObject,
                    Interpreter.READONLY_DESCRIPTOR);
-  this.setProperty(scope, 'self', scope); // Editable.
+  this.setProperty(globalObject, 'self', globalObject);  // Editable.
 
   // Create the objects which will become Object.prototype and
   // Function.prototype, which are needed to bootstrap everything else.
   this.OBJECT_PROTO = new Interpreter.Object(null);
   this.FUNCTION_PROTO = new Interpreter.Object(this.OBJECT_PROTO);
   // Initialize global objects.
-  this.initFunction(scope);
-  this.initObject(scope);
-  // Unable to set scope's parent prior (OBJECT did not exist).
-  // Note that in a browser this would be 'Window', whereas in Node.js it would
-  // be 'Object'.  This interpreter is closer to Node in that it has no DOM.
-  scope.proto = this.OBJECT_PROTO;
-  this.setProperty(scope, 'constructor', this.OBJECT,
+  this.initFunction(globalObject);
+  this.initObject(globalObject);
+  // Unable to set globalObject's parent prior (OBJECT did not exist).
+  // Note that in a browser this would be `Window`, whereas in Node.js it would
+  // be `Object`.  This interpreter is closer to Node in that it has no DOM.
+  globalObject.proto = this.OBJECT_PROTO;
+  this.setProperty(globalObject, 'constructor', this.OBJECT,
                    Interpreter.NONENUMERABLE_DESCRIPTOR);
-  this.initArray(scope);
-  this.initString(scope);
-  this.initBoolean(scope);
-  this.initNumber(scope);
-  this.initDate(scope);
-  this.initRegExp(scope);
-  this.initError(scope);
-  this.initMath(scope);
-  this.initJSON(scope);
+  this.initArray(globalObject);
+  this.initString(globalObject);
+  this.initBoolean(globalObject);
+  this.initNumber(globalObject);
+  this.initDate(globalObject);
+  this.initRegExp(globalObject);
+  this.initError(globalObject);
+  this.initMath(globalObject);
+  this.initJSON(globalObject);
 
   // Initialize global functions.
   var thisInterpreter = this;
   var func = this.createNativeFunction(
       function(x) {throw EvalError("Can't happen");}, false);
   func.eval = true;
-  this.setProperty(scope, 'eval', func);
+  this.setProperty(globalObject, 'eval', func);
 
-  this.setProperty(scope, 'parseInt',
+  this.setProperty(globalObject, 'parseInt',
       this.createNativeFunction(parseInt, false));
-  this.setProperty(scope, 'parseFloat',
+  this.setProperty(globalObject, 'parseFloat',
       this.createNativeFunction(parseFloat, false));
 
-  this.setProperty(scope, 'isNaN',
+  this.setProperty(globalObject, 'isNaN',
       this.createNativeFunction(isNaN, false));
 
-  this.setProperty(scope, 'isFinite',
+  this.setProperty(globalObject, 'isFinite',
       this.createNativeFunction(isFinite, false));
 
   var strFunctions = [
@@ -351,46 +428,34 @@ Interpreter.prototype.initGlobalScope = function(scope) {
         }
       };
     })(strFunctions[i][0]);
-    this.setProperty(scope, strFunctions[i][1],
+    this.setProperty(globalObject, strFunctions[i][1],
         this.createNativeFunction(wrapper, false),
         Interpreter.NONENUMERABLE_DESCRIPTOR);
   }
   // Preserve publicly properties from being pruned/renamed by JS compilers.
   // Add others as needed.
-  this['OBJECT'] = this.OBJECT; this['OBJECT_PROTO'] = this.OBJECT_PROTO;
+  this['OBJECT'] = this.OBJECT;     this['OBJECT_PROTO'] = this.OBJECT_PROTO;
   this['FUNCTION'] = this.FUNCTION; this['FUNCTION_PROTO'] = this.FUNCTION_PROTO;
-  this['ARRAY'] = this.ARRAY; this['ARRAY_PROTO'] = this.ARRAY_PROTO;
-  this['REGEXP'] = this.REGEXP; this['REGEXP_PROTO'] = this.REGEXP_PROTO;
-  this['DATE'] = this.DATE; this['DATE_PROTO'] = this.DATE_PROTO;
-  // The following properties are obsolete.  Do not use.
-  this['UNDEFINED'] = undefined; this['NULL'] = null; this['NAN'] = NaN;
-  this['TRUE'] = true; this['FALSE'] = false; this['STRING_EMPTY'] = '';
-  this['NUMBER_ZERO'] = 0; this['NUMBER_ONE'] = 1;
+  this['ARRAY'] = this.ARRAY;       this['ARRAY_PROTO'] = this.ARRAY_PROTO;
+  this['REGEXP'] = this.REGEXP;     this['REGEXP_PROTO'] = this.REGEXP_PROTO;
+  this['DATE'] = this.DATE;         this['DATE_PROTO'] = this.DATE_PROTO;
 
   // Run any user-provided initialization.
   if (this.initFunc_) {
-    this.initFunc_(this, scope);
+    this.initFunc_(this, globalObject);
   }
 };
 
 /**
  * Initialize the Function class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initFunction = function(scope) {
+Interpreter.prototype.initFunction = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   var identifierRegexp = /^[A-Za-z_$][\w$]*$/;
   // Function constructor.
   wrapper = function(var_args) {
-    if (thisInterpreter.calledWithNew()) {
-      // Called as new Function().
-      var newFunc = this;
-    } else {
-      // Called as Function().
-      var newFunc =
-          thisInterpreter.createObjectProto(thisInterpreter.FUNCTION_PROTO);
-    }
     if (arguments.length) {
       var code = String(arguments[arguments.length - 1]);
     } else {
@@ -408,10 +473,7 @@ Interpreter.prototype.initFunction = function(scope) {
       }
       argsStr = args.join(', ');
     }
-    // Interestingly, the scope for constructed functions is the global scope,
-    // even if they were constructed in some other scope.
-    newFunc.parentScope = thisInterpreter.global;
-    // Acorn needs to parse code in the context of a function or else 'return'
+    // Acorn needs to parse code in the context of a function or else `return`
     // statements will be syntax errors.
     try {
       var ast = acorn.parse('(function(' + argsStr + ') {' + code + '})',
@@ -426,20 +488,19 @@ Interpreter.prototype.initFunction = function(scope) {
       thisInterpreter.throwException(thisInterpreter.SYNTAX_ERROR,
           'Invalid code in function body.');
     }
-    newFunc.node = ast['body'][0]['expression'];
-    thisInterpreter.setProperty(newFunc, 'length', newFunc.node['length'],
-        Interpreter.READONLY_NONENUMERABLE_DESCRIPTOR);
-    return newFunc;
+    var node = ast['body'][0]['expression'];
+    // Note that if this constructor is called as `new Function()` the function
+    // object created by stepCallExpression and assigned to `this` is discarded.
+    // Interestingly, the scope for constructed functions is the global scope,
+    // even if they were constructed in some other scope.
+    return thisInterpreter.createFunction(node, thisInterpreter.globalScope);
   };
-  wrapper.id = this.functionCounter_++;
-  this.FUNCTION = this.createObjectProto(this.FUNCTION_PROTO);
+  this.FUNCTION = this.createNativeFunction(wrapper, true);
 
-  this.setProperty(scope, 'Function', this.FUNCTION);
-  // Manually setup type and prototype because createObj doesn't recognize
-  // this object as a function (this.FUNCTION did not exist).
+  this.setProperty(globalObject, 'Function', this.FUNCTION);
+  // Throw away the created prototype and use the root prototype.
   this.setProperty(this.FUNCTION, 'prototype', this.FUNCTION_PROTO,
                    Interpreter.NONENUMERABLE_DESCRIPTOR);
-  this.FUNCTION.nativeFunc = wrapper;
 
   // Configure Function.prototype.
   this.setProperty(this.FUNCTION_PROTO, 'constructor', this.FUNCTION,
@@ -450,11 +511,12 @@ Interpreter.prototype.initFunction = function(scope) {
       Interpreter.READONLY_NONENUMERABLE_DESCRIPTOR);
 
   var boxThis = function(value) {
-    // In non-strict mode 'this' must be an object.
-    if ((!value || !value.isObject) && !thisInterpreter.getScope().strict) {
+    // In non-strict mode `this` must be an object.
+    if (!(value instanceof Interpreter.Object) &&
+        !thisInterpreter.getScope().strict) {
       if (value === undefined || value === null) {
-        // 'Undefined' and 'null' are changed to global object.
-        value = thisInterpreter.global;
+        // `Undefined` and `null` are changed to the global object.
+        value = thisInterpreter.globalObject;
       } else {
         // Primitives must be boxed in non-strict mode.
         var box = thisInterpreter.createObjectProto(
@@ -469,14 +531,14 @@ Interpreter.prototype.initFunction = function(scope) {
   wrapper = function(thisArg, args) {
     var state =
         thisInterpreter.stateStack[thisInterpreter.stateStack.length - 1];
-    // Rewrite the current 'CallExpression' to apply a different function.
+    // Rewrite the current CallExpression state to apply a different function.
     state.func_ = this;
-    // Assign the 'this' object.
+    // Assign the `this` object.
     state.funcThis_ = boxThis(thisArg);
     // Bind any provided arguments.
     state.arguments_ = [];
     if (args !== null && args !== undefined) {
-      if (args.isObject) {
+      if (args instanceof Interpreter.Object) {
         state.arguments_ = thisInterpreter.arrayPseudoToNative(args);
       } else {
         thisInterpreter.throwException(thisInterpreter.TYPE_ERROR,
@@ -490,9 +552,9 @@ Interpreter.prototype.initFunction = function(scope) {
   wrapper = function(thisArg /*, var_args */) {
     var state =
         thisInterpreter.stateStack[thisInterpreter.stateStack.length - 1];
-    // Rewrite the current 'CallExpression' to call a different function.
+    // Rewrite the current CallExpression state to call a different function.
     state.func_ = this;
-    // Assign the 'this' object.
+    // Assign the `this` object.
     state.funcThis_ = boxThis(thisArg);
     // Bind any provided arguments.
     state.arguments_ = [];
@@ -550,9 +612,9 @@ Interpreter.prototype.initFunction = function(scope) {
 
 /**
  * Initialize the Object class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initObject = function(scope) {
+Interpreter.prototype.initObject = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   // Object constructor.
@@ -560,14 +622,14 @@ Interpreter.prototype.initObject = function(scope) {
     if (value === undefined || value === null) {
       // Create a new object.
       if (thisInterpreter.calledWithNew()) {
-        // Called as new Object().
+        // Called as `new Object()`.
         return this;
       } else {
-        // Called as Object().
+        // Called as `Object()`.
         return thisInterpreter.createObjectProto(thisInterpreter.OBJECT_PROTO);
       }
     }
-    if (!value.isObject) {
+    if (!(value instanceof Interpreter.Object)) {
       // Wrap the value as an object.
       var box = thisInterpreter.createObjectProto(
           thisInterpreter.getPrototype(value));
@@ -583,7 +645,7 @@ Interpreter.prototype.initObject = function(scope) {
                    Interpreter.NONENUMERABLE_DESCRIPTOR);
   this.setProperty(this.OBJECT_PROTO, 'constructor', this.OBJECT,
                    Interpreter.NONENUMERABLE_DESCRIPTOR);
-  this.setProperty(scope, 'Object', this.OBJECT);
+  this.setProperty(globalObject, 'Object', this.OBJECT);
 
   /**
    * Checks if the provided value is null or undefined.
@@ -600,7 +662,7 @@ Interpreter.prototype.initObject = function(scope) {
   // Static methods on Object.
   wrapper = function(obj) {
     throwIfNullUndefined(obj);
-    var props = obj.isObject ? obj.properties : obj;
+    var props = (obj instanceof Interpreter.Object) ? obj.properties : obj;
     return thisInterpreter.arrayNativeToPseudo(
         Object.getOwnPropertyNames(props));
   };
@@ -610,7 +672,7 @@ Interpreter.prototype.initObject = function(scope) {
 
   wrapper = function(obj) {
     throwIfNullUndefined(obj);
-    if (obj.isObject) {
+    if (obj instanceof Interpreter.Object) {
       obj = obj.properties;
     }
     return thisInterpreter.arrayNativeToPseudo(Object.keys(obj));
@@ -624,7 +686,7 @@ Interpreter.prototype.initObject = function(scope) {
     if (proto === null) {
       return thisInterpreter.createObjectProto(null);
     }
-    if (proto === undefined || !proto.isObject) {
+    if (!(proto instanceof Interpreter.Object)) {
       thisInterpreter.throwException(thisInterpreter.TYPE_ERROR,
           'Object prototype may only be an Object or null');
     }
@@ -648,11 +710,11 @@ Interpreter.prototype.initObject = function(scope) {
 
   wrapper = function(obj, prop, descriptor) {
     prop = String(prop);
-    if (!obj || !obj.isObject) {
+    if (!(obj instanceof Interpreter.Object)) {
       thisInterpreter.throwException(thisInterpreter.TYPE_ERROR,
           'Object.defineProperty called on non-object');
     }
-    if (!descriptor || !descriptor.isObject) {
+    if (!(descriptor instanceof Interpreter.Object)) {
       thisInterpreter.throwException(thisInterpreter.TYPE_ERROR,
           'Property description must be an object');
     }
@@ -699,7 +761,7 @@ Interpreter.prototype.initObject = function(scope) {
 "");
 
   wrapper = function(obj, prop) {
-    if (!obj || !obj.isObject) {
+    if (!(obj instanceof Interpreter.Object)) {
       thisInterpreter.throwException(thisInterpreter.TYPE_ERROR,
           'Object.getOwnPropertyDescriptor called on non-object');
     }
@@ -711,20 +773,21 @@ Interpreter.prototype.initObject = function(scope) {
     var getter = obj.getter[prop];
     var setter = obj.setter[prop];
 
+    var pseudoDescriptor =
+        thisInterpreter.createObjectProto(thisInterpreter.OBJECT_PROTO);
     if (getter || setter) {
-      descriptor.get = getter;
-      descriptor.set = setter;
-      delete descriptor.value;
-      delete descriptor.writable;
+      thisInterpreter.setProperty(pseudoDescriptor, 'get', getter);
+      thisInterpreter.setProperty(pseudoDescriptor, 'set', setter);
+    } else {
+      thisInterpreter.setProperty(pseudoDescriptor, 'value',
+          descriptor.value);
+      thisInterpreter.setProperty(pseudoDescriptor, 'writable',
+          descriptor.writable);
     }
-    // Preserve value, but remove it for the nativeToPseudo call.
-    var value = descriptor.value;
-    var hasValue = 'value' in descriptor;
-    delete descriptor.value;
-    var pseudoDescriptor = thisInterpreter.nativeToPseudo(descriptor);
-    if (hasValue) {
-      thisInterpreter.setProperty(pseudoDescriptor, 'value', value);
-    }
+    thisInterpreter.setProperty(pseudoDescriptor, 'configurable',
+        descriptor.configurable);
+    thisInterpreter.setProperty(pseudoDescriptor, 'enumerable',
+        descriptor.enumerable);
     return pseudoDescriptor;
   };
   this.setProperty(this.OBJECT, 'getOwnPropertyDescriptor',
@@ -747,7 +810,7 @@ Interpreter.prototype.initObject = function(scope) {
       Interpreter.NONENUMERABLE_DESCRIPTOR);
 
   wrapper = function(obj) {
-    if (obj && obj.isObject) {
+    if (obj instanceof Interpreter.Object) {
       obj.preventExtensions = true;
     }
     return obj;
@@ -766,19 +829,21 @@ Interpreter.prototype.initObject = function(scope) {
 
   wrapper = function(prop) {
     throwIfNullUndefined(this);
-    if (!this.isObject) {
-      return this.hasOwnProperty(prop);
+    if (this instanceof Interpreter.Object) {
+      return String(prop) in this.properties;
     }
-    return String(prop) in this.properties;
+    // Primitive.
+    return this.hasOwnProperty(prop);
   };
   this.setNativeFunctionPrototype(this.OBJECT, 'hasOwnProperty', wrapper);
 
   wrapper = function(prop) {
     throwIfNullUndefined(this);
-    if (!this.isObject) {
-      return this.propertyIsEnumerable(prop);
+    if (this instanceof Interpreter.Object) {
+      return Object.prototype.propertyIsEnumerable.call(this.properties, prop);
     }
-    return Object.prototype.propertyIsEnumerable.call(this.properties, prop);
+    // Primitive.
+    return this.propertyIsEnumerable(prop);
   };
   this.setNativeFunctionPrototype(this.OBJECT, 'propertyIsEnumerable', wrapper);
 
@@ -800,20 +865,19 @@ Interpreter.prototype.initObject = function(scope) {
 
 /**
  * Initialize the Array class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initArray = function(scope) {
+Interpreter.prototype.initArray = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   // Array constructor.
   wrapper = function(var_args) {
     if (thisInterpreter.calledWithNew()) {
-      // Called as new Array().
+      // Called as `new Array()`.
       var newArray = this;
     } else {
-      // Called as Array().
-      var newArray =
-          thisInterpreter.createObjectProto(thisInterpreter.ARRAY_PROTO);
+      // Called as `Array()`.
+      var newArray = thisInterpreter.createArray();
     }
     var first = arguments[0];
     if (arguments.length === 1 && typeof first === 'number') {
@@ -832,7 +896,7 @@ Interpreter.prototype.initArray = function(scope) {
   };
   this.ARRAY = this.createNativeFunction(wrapper, true);
   this.ARRAY_PROTO = this.ARRAY.properties['prototype'];
-  this.setProperty(scope, 'Array', this.ARRAY);
+  this.setProperty(globalObject, 'Array', this.ARRAY);
 
   // Static methods on Array.
   wrapper = function(obj) {
@@ -843,6 +907,10 @@ Interpreter.prototype.initArray = function(scope) {
                    Interpreter.NONENUMERABLE_DESCRIPTOR);
 
   // Instance methods on Array.
+  this.setProperty(this.ARRAY_PROTO, 'length', 0,
+      {configurable: false, enumerable: false, writable: true});
+  this.ARRAY_PROTO.class = 'Array';
+
   wrapper = function() {
     return Array.prototype.pop.call(this.properties);
   };
@@ -1115,25 +1183,25 @@ Interpreter.prototype.initArray = function(scope) {
 
 /**
  * Initialize the String class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initString = function(scope) {
+Interpreter.prototype.initString = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   // String constructor.
   wrapper = function(value) {
-    value = String(value);
+    value = arguments.length ? String(value) : '';
     if (thisInterpreter.calledWithNew()) {
-      // Called as new String().
+      // Called as `new String()`.
       this.data = value;
       return this;
     } else {
-      // Called as String().
+      // Called as `String()`.
       return value;
     }
   };
   this.STRING = this.createNativeFunction(wrapper, true);
-  this.setProperty(scope, 'String', this.STRING);
+  this.setProperty(globalObject, 'String', this.STRING);
 
   // Static methods on String.
   this.setProperty(this.STRING, 'fromCharCode',
@@ -1165,7 +1233,7 @@ Interpreter.prototype.initString = function(scope) {
     if (thisInterpreter.isa(separator, thisInterpreter.REGEXP)) {
       separator = separator.data;
       thisInterpreter.maybeThrowRegExp(separator, callback);
-      if (thisInterpreter.REGEXP_MODE === 2) {
+      if (thisInterpreter['REGEXP_MODE'] === 2) {
         if (Interpreter.vm) {
           // Run split in vm.
           var sandbox = {
@@ -1209,7 +1277,7 @@ Interpreter.prototype.initString = function(scope) {
     // Example of catastrophic match RegExp:
     // 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac'.match(/^(a+)+b/)
     thisInterpreter.maybeThrowRegExp(regexp, callback);
-    if (thisInterpreter.REGEXP_MODE === 2) {
+    if (thisInterpreter['REGEXP_MODE'] === 2) {
       if (Interpreter.vm) {
         // Run match in vm.
         var sandbox = {
@@ -1249,7 +1317,7 @@ Interpreter.prototype.initString = function(scope) {
     // Example of catastrophic search RegExp:
     // 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac'.search(/^(a+)+b/)
     thisInterpreter.maybeThrowRegExp(regexp, callback);
-    if (thisInterpreter.REGEXP_MODE === 2) {
+    if (thisInterpreter['REGEXP_MODE'] === 2) {
       if (Interpreter.vm) {
         // Run search in vm.
         var sandbox = {
@@ -1287,7 +1355,7 @@ Interpreter.prototype.initString = function(scope) {
     if (thisInterpreter.isa(substr, thisInterpreter.REGEXP)) {
       substr = substr.data;
       thisInterpreter.maybeThrowRegExp(substr, callback);
-      if (thisInterpreter.REGEXP_MODE === 2) {
+      if (thisInterpreter['REGEXP_MODE'] === 2) {
         if (Interpreter.vm) {
           // Run replace in vm.
           var sandbox = {
@@ -1357,48 +1425,48 @@ Interpreter.prototype.initString = function(scope) {
 
 /**
  * Initialize the Boolean class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initBoolean = function(scope) {
+Interpreter.prototype.initBoolean = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   // Boolean constructor.
   wrapper = function(value) {
     value = Boolean(value);
     if (thisInterpreter.calledWithNew()) {
-      // Called as new Boolean().
+      // Called as `new Boolean()`.
       this.data = value;
       return this;
     } else {
-      // Called as Boolean().
+      // Called as `Boolean()`.
       return value;
     }
   };
   this.BOOLEAN = this.createNativeFunction(wrapper, true);
-  this.setProperty(scope, 'Boolean', this.BOOLEAN);
+  this.setProperty(globalObject, 'Boolean', this.BOOLEAN);
 };
 
 /**
  * Initialize the Number class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initNumber = function(scope) {
+Interpreter.prototype.initNumber = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   // Number constructor.
   wrapper = function(value) {
-    value = Number(value);
+    value = arguments.length ? Number(value) : 0;
     if (thisInterpreter.calledWithNew()) {
-      // Called as new Number().
+      // Called as `new Number()`.
       this.data = value;
       return this;
     } else {
-      // Called as Number().
+      // Called as `Number()`.
       return value;
     }
   };
   this.NUMBER = this.createNativeFunction(wrapper, true);
-  this.setProperty(scope, 'Number', this.NUMBER);
+  this.setProperty(globalObject, 'Number', this.NUMBER);
 
   var numConsts = ['MAX_VALUE', 'MIN_VALUE', 'NaN', 'NEGATIVE_INFINITY',
                    'POSITIVE_INFINITY'];
@@ -1458,26 +1526,26 @@ Interpreter.prototype.initNumber = function(scope) {
 
 /**
  * Initialize the Date class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initDate = function(scope) {
+Interpreter.prototype.initDate = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   // Date constructor.
   wrapper = function(value, var_args) {
     if (!thisInterpreter.calledWithNew()) {
-      // Called as Date().
+      // Called as `Date()`.
       // Calling Date() as a function returns a string, no arguments are heeded.
       return Date();
     }
-    // Called as new Date().
+    // Called as `new Date()`.
     var args = [null].concat(Array.from(arguments));
     this.data = new (Function.prototype.bind.apply(Date, args));
     return this;
   };
   this.DATE = this.createNativeFunction(wrapper, true);
   this.DATE_PROTO = this.DATE.properties['prototype'];
-  this.setProperty(scope, 'Date', this.DATE);
+  this.setProperty(globalObject, 'Date', this.DATE);
 
   // Static methods on Date.
   this.setProperty(this.DATE, 'now', this.createNativeFunction(Date.now, false),
@@ -1519,18 +1587,18 @@ Interpreter.prototype.initDate = function(scope) {
 
 /**
  * Initialize Regular Expression object.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initRegExp = function(scope) {
+Interpreter.prototype.initRegExp = function(globalObject) {
   var thisInterpreter = this;
   var wrapper;
   // RegExp constructor.
   wrapper = function(pattern, flags) {
     if (thisInterpreter.calledWithNew()) {
-      // Called as new RegExp().
+      // Called as `new RegExp()`.
       var rgx = this;
     } else {
-      // Called as RegExp().
+      // Called as `RegExp()`.
       var rgx = thisInterpreter.createObjectProto(thisInterpreter.REGEXP_PROTO);
     }
     pattern = pattern ? String(pattern) : '';
@@ -1540,7 +1608,7 @@ Interpreter.prototype.initRegExp = function(scope) {
   };
   this.REGEXP = this.createNativeFunction(wrapper, true);
   this.REGEXP_PROTO = this.REGEXP.properties['prototype'];
-  this.setProperty(scope, 'RegExp', this.REGEXP);
+  this.setProperty(globalObject, 'RegExp', this.REGEXP);
 
   this.setProperty(this.REGEXP.properties['prototype'], 'global', undefined,
       Interpreter.READONLY_NONENUMERABLE_DESCRIPTOR);
@@ -1561,16 +1629,14 @@ Interpreter.prototype.initRegExp = function(scope) {
 "});");
 
   wrapper = function(string, callback) {
-    var thisPseudoRegExp = this;
-    var regexp = thisPseudoRegExp.data;
+    var regexp = this.data;
     string = String(string);
-    // Get lastIndex from wrapped regex, since this is settable.
-    regexp.lastIndex =
-        Number(thisInterpreter.getProperty(this, 'lastIndex'));
+    // Get lastIndex from wrapped regexp, since this is settable.
+    regexp.lastIndex = Number(thisInterpreter.getProperty(this, 'lastIndex'));
     // Example of catastrophic exec RegExp:
     // /^(a+)+b/.exec('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaac')
     thisInterpreter.maybeThrowRegExp(regexp, callback);
-    if (thisInterpreter.REGEXP_MODE === 2) {
+    if (thisInterpreter['REGEXP_MODE'] === 2) {
       if (Interpreter.vm) {
         // Run exec in vm.
         var sandbox = {
@@ -1580,8 +1646,7 @@ Interpreter.prototype.initRegExp = function(scope) {
         var code = 'regexp.exec(string)';
         var match = thisInterpreter.vmCall(code, sandbox, regexp, callback);
         if (match !== Interpreter.REGEXP_TIMEOUT) {
-          thisInterpreter.setProperty(thisPseudoRegExp, 'lastIndex',
-              regexp.lastIndex);
+          thisInterpreter.setProperty(this, 'lastIndex', regexp.lastIndex);
           callback(matchToPseudo(match));
         }
       } else {
@@ -1590,11 +1655,11 @@ Interpreter.prototype.initRegExp = function(scope) {
         // Web Worker.  Thus it needs to be passed back and forth separately.
         var execWorker = thisInterpreter.createWorker();
         var pid = thisInterpreter.regExpTimeout(regexp, execWorker, callback);
+        var thisPseudoRegExp = this;
         execWorker.onmessage = function(e) {
           clearTimeout(pid);
           // Return tuple: [result, lastIndex]
-          thisInterpreter.setProperty(thisPseudoRegExp, 'lastIndex',
-              e.data[1]);
+          thisInterpreter.setProperty(thisPseudoRegExp, 'lastIndex', e.data[1]);
           callback(matchToPseudo(e.data[0]));
         };
         execWorker.postMessage(['exec', regexp, regexp.lastIndex, string]);
@@ -1603,8 +1668,7 @@ Interpreter.prototype.initRegExp = function(scope) {
     }
     // Run exec natively.
     var match = regexp.exec(string);
-    thisInterpreter.setProperty(thisPseudoRegExp, 'lastIndex',
-        regexp.lastIndex);
+    thisInterpreter.setProperty(this, 'lastIndex', regexp.lastIndex);
     callback(matchToPseudo(match));
 
     function matchToPseudo(match) {
@@ -1623,17 +1687,17 @@ Interpreter.prototype.initRegExp = function(scope) {
 
 /**
  * Initialize the Error class.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initError = function(scope) {
+Interpreter.prototype.initError = function(globalObject) {
   var thisInterpreter = this;
   // Error constructor.
   this.ERROR = this.createNativeFunction(function(opt_message) {
     if (thisInterpreter.calledWithNew()) {
-      // Called as new Error().
+      // Called as `new Error()`.
       var newError = this;
     } else {
-      // Called as Error().
+      // Called as `Error()`.
       var newError = thisInterpreter.createObject(thisInterpreter.ERROR);
     }
     if (opt_message) {
@@ -1642,7 +1706,7 @@ Interpreter.prototype.initError = function(scope) {
     }
     return newError;
   }, true);
-  this.setProperty(scope, 'Error', this.ERROR);
+  this.setProperty(globalObject, 'Error', this.ERROR);
   this.setProperty(this.ERROR.properties['prototype'], 'message', '',
       Interpreter.NONENUMERABLE_DESCRIPTOR);
   this.setProperty(this.ERROR.properties['prototype'], 'name', 'Error',
@@ -1652,10 +1716,10 @@ Interpreter.prototype.initError = function(scope) {
     var constructor = thisInterpreter.createNativeFunction(
         function(opt_message) {
           if (thisInterpreter.calledWithNew()) {
-            // Called as new XyzError().
+            // Called as `new XyzError()`.
             var newError = this;
           } else {
-            // Called as XyzError().
+            // Called as `XyzError()`.
             var newError = thisInterpreter.createObject(constructor);
           }
           if (opt_message) {
@@ -1669,7 +1733,7 @@ Interpreter.prototype.initError = function(scope) {
         Interpreter.NONENUMERABLE_DESCRIPTOR);
     thisInterpreter.setProperty(constructor.properties['prototype'], 'name',
         name, Interpreter.NONENUMERABLE_DESCRIPTOR);
-    thisInterpreter.setProperty(scope, name, constructor);
+    thisInterpreter.setProperty(globalObject, name, constructor);
 
     return constructor;
   };
@@ -1684,12 +1748,11 @@ Interpreter.prototype.initError = function(scope) {
 
 /**
  * Initialize Math object.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initMath = function(scope) {
-  var thisInterpreter = this;
+Interpreter.prototype.initMath = function(globalObject) {
   var myMath = this.createObjectProto(this.OBJECT_PROTO);
-  this.setProperty(scope, 'Math', myMath);
+  this.setProperty(globalObject, 'Math', myMath);
   var mathConsts = ['E', 'LN2', 'LN10', 'LOG2E', 'LOG10E', 'PI',
                     'SQRT1_2', 'SQRT2'];
   for (var i = 0; i < mathConsts.length; i++) {
@@ -1708,12 +1771,12 @@ Interpreter.prototype.initMath = function(scope) {
 
 /**
  * Initialize JSON object.
- * @param {!Interpreter.Object} scope Global scope.
+ * @param {!Interpreter.Object} globalObject Global object.
  */
-Interpreter.prototype.initJSON = function(scope) {
+Interpreter.prototype.initJSON = function(globalObject) {
   var thisInterpreter = this;
   var myJSON = thisInterpreter.createObjectProto(this.OBJECT_PROTO);
-  this.setProperty(scope, 'JSON', myJSON);
+  this.setProperty(globalObject, 'JSON', myJSON);
 
   var wrapper = function(text) {
     try {
@@ -1725,10 +1788,27 @@ Interpreter.prototype.initJSON = function(scope) {
   };
   this.setProperty(myJSON, 'parse', this.createNativeFunction(wrapper, false));
 
-  wrapper = function(value) {
+  wrapper = function(value, replacer, space) {
+    if (replacer && replacer.class === 'Function') {
+      thisInterpreter.throwException(thisInterpreter.TYPE_ERROR,
+          'Function replacer on JSON.stringify not supported');
+    } else if (replacer && replacer.class === 'Array') {
+      replacer = thisInterpreter.arrayPseudoToNative(replacer);
+      replacer = replacer.filter(function(word) {
+        // Spec says we should also support boxed primitives here.
+        return typeof word === 'string' || typeof word === 'number';
+      });
+    } else {
+      replacer = null;
+    }
+    // Spec says we should also support boxed primitives here.
+    if (typeof space !== 'string' && typeof space !== 'number') {
+      space = undefined;
+    }
+
     var nativeObj = thisInterpreter.pseudoToNative(value);
     try {
-      var str = JSON.stringify(nativeObj);
+      var str = JSON.stringify(nativeObj, replacer, space);
     } catch (e) {
       thisInterpreter.throwException(thisInterpreter.TYPE_ERROR, e.message);
     }
@@ -1772,7 +1852,7 @@ Interpreter.prototype.isa = function(child, constructor) {
  * @param {!RegExp} nativeRegexp The native regular expression.
  */
 Interpreter.prototype.populateRegExp = function(pseudoRegexp, nativeRegexp) {
-  pseudoRegexp.data = nativeRegexp;
+  pseudoRegexp.data = new RegExp(nativeRegexp.source, nativeRegexp.flags);
   // lastIndex is settable, all others are read-only attributes
   this.setProperty(pseudoRegexp, 'lastIndex', nativeRegexp.lastIndex,
       Interpreter.NONENUMERABLE_DESCRIPTOR);
@@ -1812,7 +1892,7 @@ Interpreter.prototype.createWorker = function() {
  * @param {!Function} callback Asynchronous callback function.
  */
 Interpreter.prototype.vmCall = function(code, sandbox, nativeRegExp, callback) {
-  var options = {'timeout': this.REGEXP_THREAD_TIMEOUT};
+  var options = {'timeout': this['REGEXP_THREAD_TIMEOUT']};
   try {
     return Interpreter.vm['runInNewContext'](code, sandbox, options);
   } catch (e) {
@@ -1830,10 +1910,10 @@ Interpreter.prototype.vmCall = function(code, sandbox, nativeRegExp, callback) {
  */
 Interpreter.prototype.maybeThrowRegExp = function(nativeRegExp, callback) {
   var ok;
-  if (this.REGEXP_MODE === 0) {
+  if (this['REGEXP_MODE'] === 0) {
     // Fail: No RegExp support.
     ok = false;
-  } else if (this.REGEXP_MODE === 1) {
+  } else if (this['REGEXP_MODE'] === 1) {
     // Ok: Native RegExp support.
     ok = true;
   } else {
@@ -1848,7 +1928,7 @@ Interpreter.prototype.maybeThrowRegExp = function(nativeRegExp, callback) {
       // Try to load Node's vm module.
       try {
         Interpreter.vm = require('vm');
-      } catch (e) {};
+      } catch (e) {}
       ok = !!Interpreter.vm;
     } else {
       // Fail: Neither Web Workers nor vm available.
@@ -1881,139 +1961,7 @@ Interpreter.prototype.regExpTimeout = function(nativeRegExp, worker, callback) {
       } catch (e) {
         // Eat the expected Interpreter.STEP_ERROR.
       }
-  }, this.REGEXP_THREAD_TIMEOUT);
-};
-
-/**
- * Is a value a legal integer for an array length?
- * @param {Interpreter.Value} x Value to check.
- * @return {number} Zero, or a positive integer if the value can be
- *     converted to such.  NaN otherwise.
- */
-Interpreter.legalArrayLength = function(x) {
-  var n = x >>> 0;
-  // Array length must be between 0 and 2^32-1 (inclusive).
-  return (n === Number(x)) ? n : NaN;
-};
-
-/**
- * Is a value a legal integer for an array index?
- * @param {Interpreter.Value} x Value to check.
- * @return {number} Zero, or a positive integer if the value can be
- *     converted to such.  NaN otherwise.
- */
-Interpreter.legalArrayIndex = function(x) {
-  var n = x >>> 0;
-  // Array index cannot be 2^32-1, otherwise length would be 2^32.
-  // 0xffffffff is 2^32-1.
-  return (String(n) === String(x) && n !== 0xffffffff) ? n : NaN;
-};
-
-/**
- * Typedef for JS values.
- * @typedef {!Interpreter.Object|boolean|number|string|undefined|null}
- */
-Interpreter.Value;
-
-/**
- * Class for an object.
- * @param {Interpreter.Object} proto Prototype object or null.
- * @constructor
- */
-Interpreter.Object = function(proto) {
-  this.getter = Object.create(null);
-  this.setter = Object.create(null);
-  this.properties = Object.create(null);
-  this.proto = proto;
-};
-
-/** @type {Interpreter.Object} */
-Interpreter.Object.prototype.proto = null;
-
-/** @type {boolean} */
-Interpreter.Object.prototype.isObject = true;
-
-/** @type {string} */
-Interpreter.Object.prototype.class = 'Object';
-
-/** @type {Date|RegExp|boolean|number|string|undefined|null} */
-Interpreter.Object.prototype.data = null;
-
-/**
- * Convert this object into a string.
- * @return {string} String value.
- * @override
- */
-Interpreter.Object.prototype.toString = function() {
-  if (this.class === 'Array') {
-    // Array
-    var cycles = Interpreter.toStringCycles_;
-    cycles.push(this);
-    try {
-      var strs = [];
-      for (var i = 0; i < this.properties.length; i++) {
-        var value = this.properties[i];
-        strs[i] = (value && value.isObject && cycles.indexOf(value) !== -1) ?
-            '...' : value;
-      }
-    } finally {
-      cycles.pop();
-    }
-    return strs.join(',');
-  }
-  if (this.class === 'Error') {
-    var cycles = Interpreter.toStringCycles_;
-    if (cycles.indexOf(this) !== -1) {
-      return '[object Error]';
-    }
-    var name, message;
-    // Bug: Does not support getters and setters for name or message.
-    var obj = this;
-    do {
-      if ('name' in obj.properties) {
-        name = obj.properties['name'];
-        break;
-      }
-    } while ((obj = obj.proto));
-    var obj = this;
-    do {
-      if ('message' in obj.properties) {
-        message = obj.properties['message'];
-        break;
-      }
-    } while ((obj = obj.proto));
-    cycles.push(this);
-    try {
-      name = name && String(name);
-      message = message && String(message);
-    } finally {
-      cycles.pop();
-    }
-    return message ? name + ': ' + message : String(name);
-  }
-
-  // RegExp, Date, and boxed primitives.
-  if (this.data !== null) {
-    return String(this.data);
-  }
-
-  return '[object ' + this.class + ']';
-};
-
-/**
- * Return the object's value.
- * @return {Interpreter.Value} Value.
- * @override
- */
-Interpreter.Object.prototype.valueOf = function() {
-  if (this.data === undefined || this.data === null ||
-      this.data instanceof RegExp) {
-    return this; // An Object.
-  }
-  if (this.data instanceof Date) {
-    return this.data.valueOf();  // Milliseconds.
-  }
-  return /** @type {(boolean|number|string)} */ (this.data);  // Boxed primitive.
+  }, this['REGEXP_THREAD_TIMEOUT']);
 };
 
 /**
@@ -2037,64 +1985,77 @@ Interpreter.prototype.createObjectProto = function(proto) {
     throw Error('Non object prototype');
   }
   var obj = new Interpreter.Object(proto);
-  // Functions have prototype objects.
-  if (this.isa(obj, this.FUNCTION)) {
-    this.setProperty(obj, 'prototype',
-                     this.createObjectProto(this.OBJECT_PROTO || null),
-                     Interpreter.NONENUMERABLE_DESCRIPTOR);
-    obj.class = 'Function';
-  }
-  // Arrays have length.
-  if (this.isa(obj, this.ARRAY)) {
-    this.setProperty(obj, 'length', 0,
-        {configurable: false, enumerable: false, writable: true});
-    obj.class = 'Array';
-  }
   if (this.isa(obj, this.ERROR)) {
+    // Record this object as being an error so that its toString function can
+    // process it correctly (toString has no access to the interpreter and could
+    // not otherwise determine that the object is an error).
     obj.class = 'Error';
   }
   return obj;
 };
 
 /**
- * Create a new function.
+ * Create a new array.
+ * @return {!Interpreter.Object} New array.
+ */
+Interpreter.prototype.createArray = function() {
+  var array = this.createObjectProto(this.ARRAY_PROTO);
+  // Arrays have length.
+  this.setProperty(array, 'length', 0,
+      {configurable: false, enumerable: false, writable: true});
+  array.class = 'Array';
+  return array;
+};
+
+/**
+ * Create a new function object (could become interpreted or native or async).
+ * @param {number} argumentLength Number of arguments.
+ * @param {boolean} isConstructor True if function can be used with 'new'.
+ * @return {!Interpreter.Object} New function.
+ * @private
+ */
+Interpreter.prototype.createFunctionBase_ = function(argumentLength,
+                                                     isConstructor) {
+  var func = this.createObjectProto(this.FUNCTION_PROTO);
+  if (isConstructor) {
+    var proto = this.createObjectProto(this.OBJECT_PROTO);
+    this.setProperty(func, 'prototype', proto,
+                     Interpreter.NONENUMERABLE_DESCRIPTOR);
+    this.setProperty(proto, 'constructor', func,
+                     Interpreter.NONENUMERABLE_DESCRIPTOR);
+  } else {
+    func.illegalConstructor = true;
+  }
+  this.setProperty(func, 'length', argumentLength,
+      Interpreter.READONLY_NONENUMERABLE_DESCRIPTOR);
+  func.class = 'Function';
+  return func;
+};
+
+/**
+ * Create a new interpreted function.
  * @param {!Object} node AST node defining the function.
- * @param {!Object} scope Parent scope.
+ * @param {!Interpreter.Scope} scope Parent scope.
  * @return {!Interpreter.Object} New function.
  */
 Interpreter.prototype.createFunction = function(node, scope) {
-  var func = this.createObjectProto(this.FUNCTION_PROTO);
+  var func = this.createFunctionBase_(node['params'].length, true);
   func.parentScope = scope;
   func.node = node;
-  this.setProperty(func, 'length', func.node['params'].length,
-      Interpreter.READONLY_NONENUMERABLE_DESCRIPTOR);
   return func;
 };
 
 /**
  * Create a new native function.
  * @param {!Function} nativeFunc JavaScript function.
- * @param {boolean=} opt_constructor If true, the function's
- * prototype will have its constructor property set to the function.
- * If false, the function cannot be called as a constructor (e.g. escape).
- * Defaults to undefined.
+ * @param {boolean} isConstructor True if function can be used with 'new'.
  * @return {!Interpreter.Object} New function.
  */
-Interpreter.prototype.createNativeFunction =
-    function(nativeFunc, opt_constructor) {
-  var func = this.createObjectProto(this.FUNCTION_PROTO);
+Interpreter.prototype.createNativeFunction = function(nativeFunc,
+                                                      isConstructor) {
+  var func = this.createFunctionBase_(nativeFunc.length, isConstructor);
   func.nativeFunc = nativeFunc;
   nativeFunc.id = this.functionCounter_++;
-  this.setProperty(func, 'length', nativeFunc.length,
-      Interpreter.READONLY_NONENUMERABLE_DESCRIPTOR);
-  if (opt_constructor) {
-    this.setProperty(func.properties['prototype'], 'constructor', func,
-                     Interpreter.NONENUMERABLE_DESCRIPTOR);
-  } else if (opt_constructor === false) {
-    func.illegalConstructor = true;
-    this.setProperty(func, 'prototype', undefined,
-                     Interpreter.NONENUMERABLE_DESCRIPTOR);
-  }
   return func;
 };
 
@@ -2104,21 +2065,23 @@ Interpreter.prototype.createNativeFunction =
  * @return {!Interpreter.Object} New function.
  */
 Interpreter.prototype.createAsyncFunction = function(asyncFunc) {
-  var func = this.createObjectProto(this.FUNCTION_PROTO);
+  var func = this.createFunctionBase_(asyncFunc.length, true);
   func.asyncFunc = asyncFunc;
   asyncFunc.id = this.functionCounter_++;
-  this.setProperty(func, 'length', asyncFunc.length,
-      Interpreter.READONLY_NONENUMERABLE_DESCRIPTOR);
   return func;
 };
 
 /**
- * Converts from a native JS object or value to a JS interpreter object.
- * Can handle JSON-style values, does NOT handle cycles.
- * @param {*} nativeObj The native JS object to be converted.
- * @return {Interpreter.Value} The equivalent JS interpreter object.
+ * Converts from a native JavaScript object or value to a JS-Interpreter object.
+ * Can handle JSON-style values, regular expressions, dates and functions.
+ * Does NOT handle cycles.
+ * @param {*} nativeObj The native JavaScript object to be converted.
+ * @return {Interpreter.Value} The equivalent JS-Interpreter object.
  */
 Interpreter.prototype.nativeToPseudo = function(nativeObj) {
+  if (nativeObj instanceof Interpreter.Object) {
+    throw Error('Object is already pseudo');
+  }
   if ((typeof nativeObj !== 'object' && typeof nativeObj !== 'function') ||
       nativeObj === null) {
     return nativeObj;
@@ -2132,62 +2095,67 @@ Interpreter.prototype.nativeToPseudo = function(nativeObj) {
 
   if (nativeObj instanceof Date) {
     var pseudoDate = this.createObjectProto(this.DATE_PROTO);
-    pseudoDate.data = nativeObj;
+    pseudoDate.data = new Date(nativeObj.valueOf());
     return pseudoDate;
   }
 
-  if (nativeObj instanceof Function) {
-    var interpreter = this;
+  if (typeof nativeObj === 'function') {
+    var thisInterpreter = this;
     var wrapper = function() {
-      return interpreter.nativeToPseudo(
-        nativeObj.apply(interpreter,
-          Array.prototype.slice.call(arguments)
-          .map(function(i) {
-            return interpreter.pseudoToNative(i);
-          })
-        )
-      );
+      var args = Array.prototype.slice.call(arguments).map(function(i) {
+          return thisInterpreter.pseudoToNative(i);
+      });
+      var value = nativeObj.apply(thisInterpreter, args);
+      return thisInterpreter.nativeToPseudo(value);
     };
-    return this.createNativeFunction(wrapper, undefined);
+    var prototype = Object.getOwnPropertyDescriptor(nativeObj, 'prototype');
+    return this.createNativeFunction(wrapper, !!prototype);
   }
 
-  var pseudoObj;
   if (Array.isArray(nativeObj)) {  // Array.
-    pseudoObj = this.createObjectProto(this.ARRAY_PROTO);
+    var pseudoArray = this.createArray();
     for (var i = 0; i < nativeObj.length; i++) {
       if (i in nativeObj) {
-        this.setProperty(pseudoObj, i, this.nativeToPseudo(nativeObj[i]));
+        this.setProperty(pseudoArray, i, this.nativeToPseudo(nativeObj[i]));
       }
     }
-  } else {  // Object.
-    pseudoObj = this.createObjectProto(this.OBJECT_PROTO);
-    for (var key in nativeObj) {
-      this.setProperty(pseudoObj, key, this.nativeToPseudo(nativeObj[key]));
-    }
+    return pseudoArray;
+  }
+
+  // Object.
+  var pseudoObj = this.createObjectProto(this.OBJECT_PROTO);
+  for (var key in nativeObj) {
+    this.setProperty(pseudoObj, key, this.nativeToPseudo(nativeObj[key]));
   }
   return pseudoObj;
 };
 
 /**
- * Converts from a JS interpreter object to native JS object.
- * Can handle JSON-style values, plus cycles.
- * @param {Interpreter.Value} pseudoObj The JS interpreter object to be
+ * Converts from a JS-Interpreter object to native JavaScript object.
+ * Can handle JSON-style values, regular expressions, and dates.
+ * Does handle cycles.
+ * @param {Interpreter.Value} pseudoObj The JS-Interpreter object to be
  * converted.
  * @param {Object=} opt_cycles Cycle detection (used in recursive calls).
- * @return {*} The equivalent native JS object or value.
+ * @return {*} The equivalent native JavaScript object or value.
  */
 Interpreter.prototype.pseudoToNative = function(pseudoObj, opt_cycles) {
   if ((typeof pseudoObj !== 'object' && typeof pseudoObj !== 'function') ||
       pseudoObj === null) {
     return pseudoObj;
   }
+  if (!(pseudoObj instanceof Interpreter.Object)) {
+    throw Error('Object is not pseudo');
+  }
 
   if (this.isa(pseudoObj, this.REGEXP)) {  // Regular expression.
-    return pseudoObj.data;
+    var nativeRegExp = new RegExp(pseudoObj.data.source, pseudoObj.data.flags);
+    nativeRegExp.lastIndex = pseudoObj.data.lastIndex;
+    return nativeRegExp;
   }
 
   if (this.isa(pseudoObj, this.DATE)) {  // Date.
-    return pseudoObj.data;
+    return new Date(pseudoObj.data.valueOf());
   }
 
   var cycles = opt_cycles || {
@@ -2215,8 +2183,10 @@ Interpreter.prototype.pseudoToNative = function(pseudoObj, opt_cycles) {
     cycles.native.push(nativeObj);
     var val;
     for (var key in pseudoObj.properties) {
-      val = pseudoObj.properties[key];
-      nativeObj[key] = this.pseudoToNative(val, cycles);
+      val = this.pseudoToNative(pseudoObj.properties[key], cycles);
+      // Use defineProperty to avoid side effects if setting '__proto__'.
+      Object.defineProperty(nativeObj, key,
+          {value: val, writable: true, enumerable: true, configurable: true});
     }
   }
   cycles.pseudo.pop();
@@ -2225,14 +2195,14 @@ Interpreter.prototype.pseudoToNative = function(pseudoObj, opt_cycles) {
 };
 
 /**
- * Converts from a native JS array to a JS interpreter array.
+ * Converts from a native JavaScript array to a JS-Interpreter array.
  * Does handle non-numeric properties (like str.match's index prop).
  * Does NOT recurse into the array's contents.
- * @param {!Array} nativeArray The JS array to be converted.
- * @return {!Interpreter.Object} The equivalent JS interpreter array.
+ * @param {!Array} nativeArray The JavaScript array to be converted.
+ * @return {!Interpreter.Object} The equivalent JS-Interpreter array.
  */
 Interpreter.prototype.arrayNativeToPseudo = function(nativeArray) {
-  var pseudoArray = this.createObjectProto(this.ARRAY_PROTO);
+  var pseudoArray = this.createArray();
   var props = Object.getOwnPropertyNames(nativeArray);
   for (var i = 0; i < props.length; i++) {
     this.setProperty(pseudoArray, props[i], nativeArray[props[i]]);
@@ -2241,12 +2211,12 @@ Interpreter.prototype.arrayNativeToPseudo = function(nativeArray) {
 };
 
 /**
- * Converts from a JS interpreter array to native JS array.
+ * Converts from a JS-Interpreter array to native JavaScript array.
  * Does handle non-numeric properties (like str.match's index prop).
  * Does NOT recurse into the array's contents.
- * @param {!Interpreter.Object} pseudoArray The JS interpreter array,
- *     or JS interpreter object pretending to be an array.
- * @return {!Array} The equivalent native JS array.
+ * @param {!Interpreter.Object} pseudoArray The JS-Interpreter array,
+ *     or JS-Interpreter object pretending to be an array.
+ * @return {!Array} The equivalent native JavaScript array.
  */
 Interpreter.prototype.arrayPseudoToNative = function(pseudoArray) {
   var nativeArray = [];
@@ -2288,10 +2258,16 @@ Interpreter.prototype.getPrototype = function(value) {
  * @return {Interpreter.Value} Property value (may be undefined).
  */
 Interpreter.prototype.getProperty = function(obj, name) {
+  if (this.getterStep_) {
+    throw Error('Getter not supported in that context');
+  }
   name = String(name);
   if (obj === undefined || obj === null) {
     this.throwException(this.TYPE_ERROR,
                         "Cannot read property '" + name + "' of " + obj);
+  }
+  if (typeof obj === 'object' && !(obj instanceof Interpreter.Object)) {
+    throw TypeError('Expecting native value or pseudo object');
   }
   if (name === 'length') {
     // Special cases for magic length property.
@@ -2314,7 +2290,7 @@ Interpreter.prototype.getProperty = function(obj, name) {
       if (getter) {
         // Flag this function as being a getter and thus needing immediate
         // execution (rather than being the value of the property).
-        getter.isGetter = true;
+        this.getterStep_ = true;
         return getter;
       }
       return obj.properties[name];
@@ -2325,12 +2301,12 @@ Interpreter.prototype.getProperty = function(obj, name) {
 
 /**
  * Does the named property exist on a data object.
- * @param {Interpreter.Value} obj Data object.
+ * @param {!Interpreter.Object} obj Data object.
  * @param {Interpreter.Value} name Name of property.
  * @return {boolean} True if property exists.
  */
 Interpreter.prototype.hasProperty = function(obj, name) {
-  if (!obj.isObject) {
+  if (!(obj instanceof Interpreter.Object)) {
     throw TypeError('Primitive data type has no properties');
   }
   name = String(name);
@@ -2353,7 +2329,7 @@ Interpreter.prototype.hasProperty = function(obj, name) {
 
 /**
  * Set a property value on a data object.
- * @param {!Interpreter.Object} obj Data object.
+ * @param {Interpreter.Value} obj Data object.
  * @param {Interpreter.Value} name Name of property.
  * @param {Interpreter.Value} value New property value.
  *     Use Interpreter.VALUE_IN_DESCRIPTOR if value is handled by
@@ -2363,10 +2339,17 @@ Interpreter.prototype.hasProperty = function(obj, name) {
  *     needs to be called, otherwise undefined.
  */
 Interpreter.prototype.setProperty = function(obj, name, value, opt_descriptor) {
+  if (this.setterStep_) {
+    // Getter from previous call to setProperty was not handled.
+    throw Error('Setter not supported in that context');
+  }
   name = String(name);
   if (obj === undefined || obj === null) {
     this.throwException(this.TYPE_ERROR,
                         "Cannot set property '" + name + "' of " + obj);
+  }
+  if (typeof obj === 'object' && !(obj instanceof Interpreter.Object)) {
+    throw TypeError('Expecting native value or pseudo object');
   }
   if (opt_descriptor && ('get' in opt_descriptor || 'set' in opt_descriptor) &&
       ('value' in opt_descriptor || 'writable' in opt_descriptor)) {
@@ -2374,7 +2357,7 @@ Interpreter.prototype.setProperty = function(obj, name, value, opt_descriptor) {
         'Cannot both specify accessors and a value or writable attribute');
   }
   var strict = !this.stateStack || this.getScope().strict;
-  if (!obj.isObject) {
+  if (!(obj instanceof Interpreter.Object)) {
     if (strict) {
       this.throwException(this.TYPE_ERROR, "Can't create property '" + name +
                           "' on '" + obj + "'");
@@ -2486,6 +2469,7 @@ Interpreter.prototype.setProperty = function(obj, name, value, opt_descriptor) {
       }
     }
     if (defObj.setter && defObj.setter[name]) {
+      this.setterStep_ = true;
       return defObj.setter[name];
     }
     if (defObj.getter && defObj.getter[name]) {
@@ -2537,7 +2521,7 @@ Interpreter.prototype.setAsyncFunctionPrototype =
 
 /**
  * Returns the current scope from the stateStack.
- * @return {!Interpreter.Object} Current scope dictionary.
+ * @return {!Interpreter.Scope} Current scope.
  */
 Interpreter.prototype.getScope = function() {
   var scope = this.stateStack[this.stateStack.length - 1].scope;
@@ -2551,29 +2535,28 @@ Interpreter.prototype.getScope = function() {
  * Create a new scope dictionary.
  * @param {!Object} node AST node defining the scope container
  *     (e.g. a function).
- * @param {Interpreter.Object} parentScope Scope to link to.
- * @return {!Interpreter.Object} New scope.
+ * @param {Interpreter.Scope} parentScope Scope to link to.
+ * @return {!Interpreter.Scope} New scope.
  */
 Interpreter.prototype.createScope = function(node, parentScope) {
-  var scope = this.createObjectProto(null);
-  scope.parentScope = parentScope;
-  if (!parentScope) {
-    this.initGlobalScope(scope);
-  }
-  this.populateScope_(node, scope);
-
-  // Determine if this scope starts with 'use strict'.
-  scope.strict = false;
+  // Determine if this scope starts with `use strict`.
+  var strict = false;
   if (parentScope && parentScope.strict) {
-    scope.strict = true;
+    strict = true;
   } else {
     var firstNode = node['body'] && node['body'][0];
     if (firstNode && firstNode.expression &&
         firstNode.expression['type'] === 'Literal' &&
         firstNode.expression.value === 'use strict') {
-      scope.strict = true;
+      strict = true;
     }
   }
+  var object = this.createObjectProto(null);
+  var scope = new Interpreter.Scope(parentScope, strict, object);
+  if (!parentScope) {
+    this.initGlobal(scope.object);
+  }
+  this.populateScope_(node, scope);
   return scope;
 };
 
@@ -2581,19 +2564,17 @@ Interpreter.prototype.createScope = function(node, parentScope) {
  * Create a new special scope dictionary. Similar to createScope(), but
  * doesn't assume that the scope is for a function body.
  * This is used for 'catch' clauses and 'with' statements.
- * @param {!Interpreter.Object} parentScope Scope to link to.
- * @param {Interpreter.Object=} opt_scope Optional object to transform into
+ * @param {!Interpreter.Scope} parentScope Scope to link to.
+ * @param {Interpreter.Object=} opt_object Optional object to transform into
  *     scope.
- * @return {!Interpreter.Object} New scope.
+ * @return {!Interpreter.Scope} New scope.
  */
-Interpreter.prototype.createSpecialScope = function(parentScope, opt_scope) {
+Interpreter.prototype.createSpecialScope = function(parentScope, opt_object) {
   if (!parentScope) {
     throw Error('parentScope required');
   }
-  var scope = opt_scope || this.createObjectProto(null);
-  scope.parentScope = parentScope;
-  scope.strict = parentScope.strict;
-  return scope;
+  var object = opt_object || this.createObjectProto(null);
+  return new Interpreter.Scope(parentScope, parentScope.strict, object);
 };
 
 /**
@@ -2605,16 +2586,16 @@ Interpreter.prototype.createSpecialScope = function(parentScope, opt_scope) {
  */
 Interpreter.prototype.getValueFromScope = function(name) {
   var scope = this.getScope();
-  while (scope && scope !== this.global) {
-    if (name in scope.properties) {
-      return scope.properties[name];
+  while (scope && scope !== this.globalScope) {
+    if (name in scope.object.properties) {
+      return scope.object.properties[name];
     }
     scope = scope.parentScope;
   }
   // The root scope is also an object which has inherited properties and
   // could also have getters.
-  if (scope === this.global && this.hasProperty(scope, name)) {
-    return this.getProperty(scope, name);
+  if (scope === this.globalScope && this.hasProperty(scope.object, name)) {
+    return this.getProperty(scope.object, name);
   }
   // Typeof operator is unique: it can safely look at non-defined variables.
   var prevNode = this.stateStack[this.stateStack.length - 1].node;
@@ -2635,17 +2616,18 @@ Interpreter.prototype.getValueFromScope = function(name) {
 Interpreter.prototype.setValueToScope = function(name, value) {
   var scope = this.getScope();
   var strict = scope.strict;
-  while (scope && scope !== this.global) {
-    if (name in scope.properties) {
-      scope.properties[name] = value;
+  while (scope && scope !== this.globalScope) {
+    if (name in scope.object.properties) {
+      scope.object.properties[name] = value;
       return undefined;
     }
     scope = scope.parentScope;
   }
   // The root scope is also an object which has readonly properties and
   // could also have setters.
-  if (scope === this.global && (!strict || this.hasProperty(scope, name))) {
-    return this.setProperty(scope, name, value);
+  if (scope === this.globalScope &&
+      (!strict || this.hasProperty(scope.object, name))) {
+    return this.setProperty(scope.object, name, value);
   }
   this.throwException(this.REFERENCE_ERROR, name + ' is not defined');
 };
@@ -2653,17 +2635,17 @@ Interpreter.prototype.setValueToScope = function(name, value) {
 /**
  * Create a new scope for the given node.
  * @param {!Object} node AST node (program or function).
- * @param {!Interpreter.Object} scope Scope dictionary to populate.
+ * @param {!Interpreter.Scope} scope Scope dictionary to populate.
  * @private
  */
 Interpreter.prototype.populateScope_ = function(node, scope) {
   if (node['type'] === 'VariableDeclaration') {
     for (var i = 0; i < node['declarations'].length; i++) {
-      this.setProperty(scope, node['declarations'][i]['id']['name'],
+      this.setProperty(scope.object, node['declarations'][i]['id']['name'],
           undefined, Interpreter.VARIABLE_DESCRIPTOR);
     }
   } else if (node['type'] === 'FunctionDeclaration') {
-    this.setProperty(scope, node['id']['name'],
+    this.setProperty(scope.object, node['id']['name'],
         this.createFunction(node, scope), Interpreter.VARIABLE_DESCRIPTOR);
     return;  // Do not recurse into function.
   } else if (node['type'] === 'FunctionExpression') {
@@ -2685,36 +2667,6 @@ Interpreter.prototype.populateScope_ = function(node, scope) {
         if (prop.constructor === nodeClass) {
           this.populateScope_(prop, scope);
         }
-      }
-    }
-  }
-};
-
-/**
- * Remove start and end values from AST, or set start and end values to a
- * constant value.  Used to remove highlighting from polyfills and to set
- * highlighting in an eval to cover the entire eval expression.
- * @param {!Object} node AST node.
- * @param {number=} start Starting character of all nodes, or undefined.
- * @param {number=} end Ending character of all nodes, or undefined.
- * @private
- */
-Interpreter.prototype.stripLocations_ = function(node, start, end) {
-  if (start) {
-    node['start'] = start;
-  } else {
-    delete node['start'];
-  }
-  if (end) {
-    node['end'] = end;
-  } else {
-    delete node['end'];
-  }
-  for (var name in node) {
-    if (node.hasOwnProperty(name)) {
-      var prop = node[name];
-      if (prop && typeof prop === 'object') {
-        this.stripLocations_(prop, start, end);
       }
     }
   }
@@ -2763,24 +2715,12 @@ Interpreter.prototype.setValue = function(ref, value) {
 };
 
 /**
-  * Completion Value Types.
-  * @enum {number}
-  */
- Interpreter.Completion = {
-   NORMAL: 0,
-   BREAK: 1,
-   CONTINUE: 2,
-   RETURN: 3,
-   THROW: 4
- };
-
-/**
  * Throw an exception in the interpreter that can be handled by an
  * interpreter try/catch statement.  If unhandled, a real exception will
  * be thrown.  Can be called with either an error class and a message, or
  * with an actual object to be thrown.
- * @param {!Interpreter.Object} errorClass Type of error (if message is
- *   provided) or the value to throw (if no message).
+ * @param {!Interpreter.Object|Interpreter.Value} errorClass Type of error
+ *   (if message is provided) or the value to throw (if no message).
  * @param {string=} opt_message Message being thrown.
  */
 Interpreter.prototype.throwException = function(errorClass, opt_message) {
@@ -2874,8 +2814,13 @@ Interpreter.prototype.unwind = function(type, value, label) {
  * @private
  */
 Interpreter.prototype.createGetter_ = function(func, left) {
-  // Normally 'this' will be specified as the object component (o.x).
-  // Sometimes 'this' is explicitly provided (o).
+  if (!this.getterStep_) {
+    throw Error('Unexpected call to createGetter');
+  }
+  // Clear the getter flag.
+  this.getterStep_ = false;
+  // Normally `this` will be specified as the object component (o.x).
+  // Sometimes `this` is explicitly provided (o).
   var funcThis = Array.isArray(left) ? left[0] : left;
   var node = new this.nodeConstructor({options:{}});
   node['type'] = 'CallExpression';
@@ -2898,9 +2843,14 @@ Interpreter.prototype.createGetter_ = function(func, left) {
  * @private
  */
 Interpreter.prototype.createSetter_ = function(func, left, value) {
-  // Normally 'this' will be specified as the object component (o.x).
-  // Sometimes 'this' is implicitly the global object (x).
-  var funcThis = Array.isArray(left) ? left[0] : this.global;
+  if (!this.setterStep_) {
+    throw Error('Unexpected call to createSetter');
+  }
+  // Clear the setter flag.
+  this.setterStep_ = false;
+  // Normally `this` will be specified as the object component (o.x).
+  // Sometimes `this` is implicitly the global object (x).
+  var funcThis = Array.isArray(left) ? left[0] : this.globalObject;
   var node = new this.nodeConstructor({options:{}});
   node['type'] = 'CallExpression';
   var state = new Interpreter.State(node,
@@ -2914,9 +2864,15 @@ Interpreter.prototype.createSetter_ = function(func, left, value) {
 };
 
 /**
+ * Typedef for JS values.
+ * @typedef {!Interpreter.Object|boolean|number|string|undefined|null}
+ */
+Interpreter.Value;
+
+/**
  * Class for a state.
  * @param {!Object} node AST node for the state.
- * @param {!Interpreter.Object} scope Scope object for the state.
+ * @param {!Interpreter.Scope} scope Scope object for the state.
  * @constructor
  */
 Interpreter.State = function(node, scope) {
@@ -2924,6 +2880,124 @@ Interpreter.State = function(node, scope) {
   this.scope = scope;
 };
 
+/**
+ * Class for a scope.
+ * @param {Interpreter.Scope} parentScope Parent scope.
+ * @param {boolean} strict True if "use strict".
+ * @param {!Interpreter.Object} object Object containing scope's variables.
+ * @struct
+ * @constructor
+ */
+Interpreter.Scope = function(parentScope, strict, object) {
+  this.parentScope = parentScope;
+  this.strict = strict;
+  this.object = object;
+};
+
+/**
+ * Class for an object.
+ * @param {Interpreter.Object} proto Prototype object or null.
+ * @constructor
+ */
+Interpreter.Object = function(proto) {
+  this.getter = Object.create(null);
+  this.setter = Object.create(null);
+  this.properties = Object.create(null);
+  this.proto = proto;
+};
+
+/** @type {Interpreter.Object} */
+Interpreter.Object.prototype.proto = null;
+
+/** @type {string} */
+Interpreter.Object.prototype.class = 'Object';
+
+/** @type {Date|RegExp|boolean|number|string|null} */
+Interpreter.Object.prototype.data = null;
+
+/**
+ * Convert this object into a string.
+ * @return {string} String value.
+ * @override
+ */
+Interpreter.Object.prototype.toString = function() {
+  if (!(this instanceof Interpreter.Object)) {
+    // Primitive value.
+    return String(this);
+  }
+
+  if (this.class === 'Array') {
+    // Array contents must not have cycles.
+    var cycles = Interpreter.toStringCycles_;
+    cycles.push(this);
+    try {
+      var strs = [];
+      for (var i = 0; i < this.properties.length; i++) {
+        var value = this.properties[i];
+        strs[i] = ((value instanceof Interpreter.Object) &&
+            cycles.indexOf(value) !== -1) ? '...' : value;
+      }
+    } finally {
+      cycles.pop();
+    }
+    return strs.join(',');
+  }
+
+  if (this.class === 'Error') {
+    // Error name and message properties must not have cycles.
+    var cycles = Interpreter.toStringCycles_;
+    if (cycles.indexOf(this) !== -1) {
+      return '[object Error]';
+    }
+    var name, message;
+    // Bug: Does not support getters and setters for name or message.
+    var obj = this;
+    do {
+      if ('name' in obj.properties) {
+        name = obj.properties['name'];
+        break;
+      }
+    } while ((obj = obj.proto));
+    var obj = this;
+    do {
+      if ('message' in obj.properties) {
+        message = obj.properties['message'];
+        break;
+      }
+    } while ((obj = obj.proto));
+    cycles.push(this);
+    try {
+      name = name && String(name);
+      message = message && String(message);
+    } finally {
+      cycles.pop();
+    }
+    return message ? name + ': ' + message : String(name);
+  }
+
+  if (this.data !== null) {
+    // RegExp, Date, and boxed primitives.
+    return String(this.data);
+  }
+
+  return '[object ' + this.class + ']';
+};
+
+/**
+ * Return the object's value.
+ * @return {Interpreter.Value} Value.
+ * @override
+ */
+Interpreter.Object.prototype.valueOf = function() {
+  if (this.data === undefined || this.data === null ||
+      this.data instanceof RegExp) {
+    return this;  // An Object, RegExp, or primitive.
+  }
+  if (this.data instanceof Date) {
+    return this.data.valueOf();  // Milliseconds.
+  }
+  return /** @type {(boolean|number|string)} */ (this.data);  // Boxed primitive.
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Functions to handle each node type.
@@ -2933,7 +3007,7 @@ Interpreter.prototype['stepArrayExpression'] = function(stack, state, node) {
   var elements = node['elements'];
   var n = state.n_ || 0;
   if (!state.array_) {
-    state.array_ = this.createObjectProto(this.ARRAY_PROTO);
+    state.array_ = this.createArray();
     state.array_.properties.length = elements.length;
   } else {
     this.setProperty(state.array_, n, state.value);
@@ -2969,9 +3043,8 @@ Interpreter.prototype['stepAssignmentExpression'] =
     if (!state.doneGetter_ && node['operator'] !== '=') {
       var leftValue = this.getValue(state.leftReference_);
       state.leftValue_ = leftValue;
-      if (leftValue && typeof leftValue === 'object' && leftValue.isGetter) {
-        // Clear the getter flag and call the getter function.
-        leftValue.isGetter = false;
+      if (this.getterStep_) {
+        // Call the getter function.
         state.doneGetter_ = true;
         var func = /** @type {!Interpreter.Object} */ (leftValue);
         return this.createGetter_(func, state.leftReference_);
@@ -3052,7 +3125,7 @@ Interpreter.prototype['stepBinaryExpression'] = function(stack, state, node) {
     case '>>':  value = leftValue >>  rightValue; break;
     case '>>>': value = leftValue >>> rightValue; break;
     case 'in':
-      if (!rightValue || !rightValue.isObject) {
+      if (!(rightValue instanceof Interpreter.Object)) {
         this.throwException(this.TYPE_ERROR,
             "'in' expects an object, not '" + rightValue + "'");
       }
@@ -3063,7 +3136,8 @@ Interpreter.prototype['stepBinaryExpression'] = function(stack, state, node) {
         this.throwException(this.TYPE_ERROR,
             'Right-hand side of instanceof is not an object');
       }
-      value = leftValue.isObject ? this.isa(leftValue, rightValue) : false;
+      value = (leftValue instanceof Interpreter.Object) ?
+          this.isa(leftValue, rightValue) : false;
       break;
     default:
       throw SyntaxError('Unknown binary operator: ' + node['operator']);
@@ -3089,7 +3163,7 @@ Interpreter.prototype['stepBreakStatement'] = function(stack, state, node) {
 Interpreter.prototype['stepCallExpression'] = function(stack, state, node) {
   if (!state.doneCallee_) {
     state.doneCallee_ = 1;
-    // Components needed to determine value of 'this'.
+    // Components needed to determine value of `this`.
     var nextState = new Interpreter.State(node['callee'], state.scope);
     nextState.components = true;
     return nextState;
@@ -3104,16 +3178,15 @@ Interpreter.prototype['stepCallExpression'] = function(stack, state, node) {
         // (Globally or locally) named function.  Is it named 'eval'?
         state.directEval_ = (func[1] === 'eval');
       } else {
-        // Method function, 'this' is object (ignored if invoked as 'new').
+        // Method function, `this` is object (ignored if invoked as `new`).
         state.funcThis_ = func[0];
       }
       func = state.func_;
-      if (func && typeof func === 'object' && func.isGetter) {
-        // Clear the getter flag and call the getter function.
-        func.isGetter = false;
+      if (this.getterStep_) {
+        // Call the getter function.
         state.doneCallee_ = 1;
         return this.createGetter_(/** @type {!Interpreter.Object} */ (func),
-                         state.value);
+            state.value);
       }
     } else {
       // Already evaluated function: (function(){...})();
@@ -3130,29 +3203,33 @@ Interpreter.prototype['stepCallExpression'] = function(stack, state, node) {
     if (node['arguments'][state.n_]) {
       return new Interpreter.State(node['arguments'][state.n_++], state.scope);
     }
-    // Determine value of 'this' in function.
+    // Determine value of `this` in function.
     if (node['type'] === 'NewExpression') {
       if (func.illegalConstructor) {
         // Illegal: new escape();
         this.throwException(this.TYPE_ERROR, func + ' is not a constructor');
       }
-      // Constructor, 'this' is new object.
-      var proto = func.properties['prototype'];
-      if (typeof proto !== 'object' || proto === null) {
-        // Non-object prototypes default to Object.prototype.
-        proto = this.OBJECT_PROTO;
+      // Constructor, `this` is new object.
+      if (func === this.ARRAY) {
+        state.funcThis_ = this.createArray();
+      } else {
+        var proto = func.properties['prototype'];
+        if (typeof proto !== 'object' || proto === null) {
+          // Non-object prototypes default to `Object.prototype`.
+          proto = this.OBJECT_PROTO;
+        }
+        state.funcThis_ = this.createObjectProto(proto);
       }
-      state.funcThis_ = this.createObjectProto(proto);
       state.isConstructor = true;
     } else if (state.funcThis_ === undefined) {
-      // Global function, 'this' is global object (or 'undefined' if strict).
-      state.funcThis_ = state.scope.strict ? undefined : this.global;
+      // Global function, `this` is global object (or `undefined` if strict).
+      state.funcThis_ = state.scope.strict ? undefined : this.globalObject;
     }
     state.doneArgs_ = true;
   }
   if (!state.doneExec_) {
     state.doneExec_ = true;
-    if (!func || !func.isObject) {
+    if (!(func instanceof Interpreter.Object)) {
       this.throwException(this.TYPE_ERROR, func + ' is not a function');
     }
     var funcNode = func.node;
@@ -3163,20 +3240,20 @@ Interpreter.prototype['stepCallExpression'] = function(stack, state, node) {
         var paramName = funcNode['params'][i]['name'];
         var paramValue = state.arguments_.length > i ? state.arguments_[i] :
             undefined;
-        this.setProperty(scope, paramName, paramValue);
+        this.setProperty(scope.object, paramName, paramValue);
       }
       // Build arguments variable.
-      var argsList = this.createObjectProto(this.ARRAY_PROTO);
+      var argsList = this.createArray();
       for (var i = 0; i < state.arguments_.length; i++) {
         this.setProperty(argsList, i, state.arguments_[i]);
       }
-      this.setProperty(scope, 'arguments', argsList);
+      this.setProperty(scope.object, 'arguments', argsList);
       // Add the function's name (var x = function foo(){};)
       var name = funcNode['id'] && funcNode['id']['name'];
       if (name) {
-        this.setProperty(scope, name, func);
+        this.setProperty(scope.object, name, func);
       }
-      this.setProperty(scope, 'this', state.funcThis_,
+      this.setProperty(scope.object, 'this', state.funcThis_,
                        Interpreter.READONLY_DESCRIPTOR);
       state.value = undefined;  // Default value if no explicit return.
       return new Interpreter.State(funcNode['body'], scope);
@@ -3196,9 +3273,9 @@ Interpreter.prototype['stepCallExpression'] = function(stack, state, node) {
         var evalNode = new this.nodeConstructor({options:{}});
         evalNode['type'] = 'EvalProgram_';
         evalNode['body'] = ast['body'];
-        this.stripLocations_(evalNode, node['start'], node['end']);
+        Interpreter.stripLocations_(evalNode, node['start'], node['end']);
         // Create new scope and update it with definitions in eval().
-        var scope = state.directEval_ ? state.scope : this.global;
+        var scope = state.directEval_ ? state.scope : this.globalScope;
         if (scope.strict) {
           // Strict mode get its own scope in eval.
           scope = this.createScope(ast, scope);
@@ -3232,14 +3309,17 @@ Interpreter.prototype['stepCallExpression'] = function(stack, state, node) {
       var f = new F();
       f();
       */
-      this.throwException(this.TYPE_ERROR, func.class + ' is not a function');
+      this.throwException(this.TYPE_ERROR, func.class + ' is not callable');
     }
   } else {
     // Execution complete.  Put the return value on the stack.
     stack.pop();
     if (state.isConstructor && typeof state.value !== 'object') {
+      // Normal case for a constructor is to use the `this` value.
       stack[stack.length - 1].value = state.funcThis_;
     } else {
+      // Non-constructors or constructions explicitly returning objects use
+      // the return value.
       stack[stack.length - 1].value = state.value;
     }
   }
@@ -3251,7 +3331,7 @@ Interpreter.prototype['stepCatchClause'] = function(stack, state, node) {
     // Create an empty scope.
     var scope = this.createSpecialScope(state.scope);
     // Add the argument.
-    this.setProperty(scope, node['param']['name'], state.throwValue);
+    this.setProperty(scope.object, node['param']['name'], state.throwValue);
     // Execute catch clause.
     return new Interpreter.State(node['body'], scope);
   } else {
@@ -3270,10 +3350,10 @@ Interpreter.prototype['stepConditionalExpression'] =
     state.mode_ = 2;
     var value = Boolean(state.value);
     if (value && node['consequent']) {
-      // Execute 'if' block.
+      // Execute `if` block.
       return new Interpreter.State(node['consequent'], state.scope);
     } else if (!value && node['alternate']) {
-      // Execute 'else' block.
+      // Execute `else` block.
       return new Interpreter.State(node['alternate'], state.scope);
     }
     // eval('1;if(false){2}') -> undefined
@@ -3371,7 +3451,7 @@ Interpreter.prototype['stepForInStatement'] = function(stack, state, node) {
   // Third, find the property name for this iteration.
   if (state.name_ === undefined) {
     gotPropName: while (true) {
-      if (state.object_ && state.object_.isObject) {
+      if (state.object_ instanceof Interpreter.Object) {
         if (!state.props_) {
           state.props_ = Object.getOwnPropertyNames(state.object_.properties);
         }
@@ -3510,15 +3590,14 @@ Interpreter.prototype['stepIdentifier'] = function(stack, state, node) {
   }
   var value = this.getValueFromScope(node['name']);
   // An identifier could be a getter if it's a property on the global object.
-  if (value && typeof value === 'object' && value.isGetter) {
-    // Clear the getter flag and call the getter function.
-    value.isGetter = false;
+  if (this.getterStep_) {
+    // Call the getter function.
     var scope = state.scope;
     while (!this.hasProperty(scope, node['name'])) {
       scope = scope.parentScope;
     }
     var func = /** @type {!Interpreter.Object} */ (value);
-    return this.createGetter_(func, this.global);
+    return this.createGetter_(func, this.globalObject);
   }
   stack[stack.length - 1].value = value;
 };
@@ -3580,11 +3659,11 @@ Interpreter.prototype['stepMemberExpression'] = function(stack, state, node) {
   var propName;
   if (!node['computed']) {
     state.object_ = state.value;
-    // obj.foo -- Just access 'foo' directly.
+    // obj.foo -- Just access `foo` directly.
     propName = node['property']['name'];
   } else if (!state.doneProperty_) {
     state.object_ = state.value;
-    // obj[foo] -- Compute value of 'foo'.
+    // obj[foo] -- Compute value of `foo`.
     state.doneProperty_ = true;
     return new Interpreter.State(node['property'], state.scope);
   } else {
@@ -3595,9 +3674,8 @@ Interpreter.prototype['stepMemberExpression'] = function(stack, state, node) {
     stack[stack.length - 1].value = [state.object_, propName];
   } else {
     var value = this.getProperty(state.object_, propName);
-    if (value && typeof value === 'object' && value.isGetter) {
-      // Clear the getter flag and call the getter function.
-      value.isGetter = false;
+    if (this.getterStep_) {
+      // Call the getter function.
       var func = /** @type {!Interpreter.Object} */ (value);
       return this.createGetter_(func, state.object_);
     }
@@ -3647,7 +3725,8 @@ Interpreter.prototype['stepObjectExpression'] = function(stack, state, node) {
         get: kinds['get'],
         set: kinds['set']
       };
-      this.setProperty(state.object_, key, null, descriptor);
+      this.setProperty(state.object_, key, Interpreter.VALUE_IN_DESCRIPTOR,
+                       descriptor);
     } else {
       // Set a normal property with a value.
       this.setProperty(state.object_, key, kinds['init']);
@@ -3804,7 +3883,7 @@ Interpreter.prototype['stepUnaryExpression'] = function(stack, state, node) {
     if (Array.isArray(value)) {
       var obj = value[0];
       if (obj === Interpreter.SCOPE_REFERENCE) {
-        // 'delete foo;' is the same as 'delete window.foo'.
+        // `delete foo;` is the same as `delete window.foo;`.
         obj = state.scope;
       }
       var name = String(value[1]);
@@ -3846,9 +3925,8 @@ Interpreter.prototype['stepUpdateExpression'] = function(stack, state, node) {
   if (!state.doneGetter_) {
     var leftValue = this.getValue(state.leftSide_);
     state.leftValue_ = leftValue;
-    if (leftValue && typeof leftValue === 'object' && leftValue.isGetter) {
-      // Clear the getter flag and call the getter function.
-      leftValue.isGetter = false;
+    if (this.getterStep_) {
+      // Call the getter function.
       state.doneGetter_ = true;
       var func = /** @type {!Interpreter.Object} */ (leftValue);
       return this.createGetter_(func, state.leftSide_);
@@ -3926,7 +4004,7 @@ Interpreter.prototype['stepWhileStatement'] =
 
 // Preserve top-level API functions from being pruned/renamed by JS compilers.
 // Add others as needed.
-// The global object ('window' in a browser, 'global' in node.js) is 'this'.
+// The global object (`window` in a browser, `global` in node.js) is `this`.
 this['Interpreter'] = Interpreter;
 Interpreter.prototype['step'] = Interpreter.prototype.step;
 Interpreter.prototype['run'] = Interpreter.prototype.run;
@@ -3942,5 +4020,3 @@ Interpreter.prototype['getProperty'] = Interpreter.prototype.getProperty;
 Interpreter.prototype['setProperty'] = Interpreter.prototype.setProperty;
 Interpreter.prototype['nativeToPseudo'] = Interpreter.prototype.nativeToPseudo;
 Interpreter.prototype['pseudoToNative'] = Interpreter.prototype.pseudoToNative;
-// Obsolete.  Do not use.
-Interpreter.prototype['createPrimitive'] = function(x) {return x;};

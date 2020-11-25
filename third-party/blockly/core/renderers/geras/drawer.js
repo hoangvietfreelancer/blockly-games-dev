@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2019 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -29,10 +15,11 @@ goog.provide('Blockly.geras.Drawer');
 goog.require('Blockly.blockRendering.ConstantProvider');
 goog.require('Blockly.blockRendering.Drawer');
 goog.require('Blockly.geras.Highlighter');
-goog.require('Blockly.geras.PathObject');
 goog.require('Blockly.geras.RenderInfo');
 goog.require('Blockly.utils.object');
 goog.require('Blockly.utils.svgPaths');
+
+goog.requireType('Blockly.geras.PathObject');
 
 
 /**
@@ -60,10 +47,12 @@ Blockly.geras.Drawer.prototype.draw = function() {
   this.drawOutline_();
   this.drawInternals_();
 
-  this.block_.pathObject.setPaths(this.outlinePath_ + '\n' + this.inlinePath_,
-      this.highlighter_.getPath());
+  var pathObject =
+    /** @type {!Blockly.geras.PathObject} */ (this.block_.pathObject);
+  pathObject.setPath(this.outlinePath_ + '\n' + this.inlinePath_);
+  pathObject.setHighlightPath(this.highlighter_.getPath());
   if (this.info_.RTL) {
-    this.block_.pathObject.flipRTL();
+    pathObject.flipRTL();
   }
   if (Blockly.blockRendering.useDebugger) {
     this.block_.renderingDebugger.drawDebug(this.block_, this.info_);
@@ -113,7 +102,10 @@ Blockly.geras.Drawer.prototype.drawStatementInput_ = function(row) {
  */
 Blockly.geras.Drawer.prototype.drawRightSideRow_ = function(row) {
   this.highlighter_.drawRightSideRow(row);
-  Blockly.geras.Drawer.superClass_.drawRightSideRow_.call(this, row);
+
+  this.outlinePath_ +=
+      Blockly.utils.svgPaths.lineOnAxis('H', row.xPos + row.width) +
+      Blockly.utils.svgPaths.lineOnAxis('V', row.yPos + row.height);
 };
 
 /**
@@ -143,4 +135,71 @@ Blockly.geras.Drawer.prototype.drawInlineInput_ = function(input) {
   this.highlighter_.drawInlineInput(input);
 
   Blockly.geras.Drawer.superClass_.drawInlineInput_.call(this, input);
+};
+
+/**
+ * @override
+ */
+Blockly.geras.Drawer.prototype.positionInlineInputConnection_ = function(input) {
+  var yPos = input.centerline - input.height / 2;
+  // Move the connection.
+  if (input.connectionModel) {
+    // xPos already contains info about startX
+    var connX = input.xPos + input.connectionWidth +
+        this.constants_.DARK_PATH_OFFSET;
+    if (this.info_.RTL) {
+      connX *= -1;
+    }
+    input.connectionModel.setOffsetInBlock(
+        connX, yPos + input.connectionOffsetY +
+        this.constants_.DARK_PATH_OFFSET);
+  }
+};
+
+/**
+ * @override
+ */
+Blockly.geras.Drawer.prototype.positionStatementInputConnection_ = function(row) {
+  var input = row.getLastInput();
+  if (input.connectionModel) {
+    var connX = row.xPos + row.statementEdge + input.notchOffset;
+    if (this.info_.RTL) {
+      connX *= -1;
+    } else {
+      connX += this.constants_.DARK_PATH_OFFSET;
+    }
+    input.connectionModel.setOffsetInBlock(connX,
+        row.yPos + this.constants_.DARK_PATH_OFFSET);
+  }
+};
+
+/**
+ * @override
+ */
+Blockly.geras.Drawer.prototype.positionExternalValueConnection_ = function(row) {
+  var input = row.getLastInput();
+  if (input.connectionModel) {
+    var connX = row.xPos + row.width +
+        this.constants_.DARK_PATH_OFFSET;
+    if (this.info_.RTL) {
+      connX *= -1;
+    }
+    input.connectionModel.setOffsetInBlock(connX, row.yPos);
+  }
+};
+
+/**
+ * @override
+ */
+Blockly.geras.Drawer.prototype.positionNextConnection_ = function() {
+  var bottomRow = this.info_.bottomRow;
+
+  if (bottomRow.connection) {
+    var connInfo = bottomRow.connection;
+    var x = connInfo.xPos; // Already contains info about startX
+    var connX = (this.info_.RTL ? -x : x) +
+        (this.constants_.DARK_PATH_OFFSET / 2);
+    connInfo.connectionModel.setOffsetInBlock(
+        connX, bottomRow.baseline + this.constants_.DARK_PATH_OFFSET);
+  }
 };

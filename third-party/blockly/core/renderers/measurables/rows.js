@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2019 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -36,7 +22,6 @@ goog.require('Blockly.blockRendering.Measurable');
 goog.require('Blockly.blockRendering.NextConnection');
 goog.require('Blockly.blockRendering.PreviousConnection');
 goog.require('Blockly.blockRendering.Types');
-goog.require('Blockly.RenderedConnection');
 goog.require('Blockly.utils.object');
 
 
@@ -158,6 +143,13 @@ Blockly.blockRendering.Row = function(constants) {
   this.constants_ = constants;
 
   this.notchOffset = this.constants_.NOTCH_OFFSET_LEFT;
+
+  /**
+   * Alignment of the row.
+   * @package
+   * @type {?number}
+   */
+  this.align = null;
 };
 
 /**
@@ -170,11 +162,11 @@ Blockly.blockRendering.Row.prototype.measure = function() {
 
 /**
  * Get the last input on this row, if it has one.
- * TODO: Consider moving this to InputRow, if possible.
  * @return {Blockly.blockRendering.InputConnection} The last input on the row,
  *     or null.
  * @package
  */
+// TODO: Consider moving this to InputRow, if possible.
 Blockly.blockRendering.Row.prototype.getLastInput = function() {
   for (var i = this.elements.length - 1, elem; (elem = this.elements[i]); i--) {
     if (Blockly.blockRendering.Types.isInput(elem)) {
@@ -284,14 +276,26 @@ Blockly.utils.object.inherits(Blockly.blockRendering.TopRow,
 /**
  * Returns whether or not the top row has a left square corner.
  * @param {!Blockly.BlockSvg} block The block whose top row this represents.
- * @returns {boolean} Whether or not the top row has a left square corner.
+ * @return {boolean} Whether or not the top row has a left square corner.
  */
 Blockly.blockRendering.TopRow.prototype.hasLeftSquareCorner = function(block) {
-  var hasHat = block.hat ? block.hat === 'cap' : Blockly.BlockSvg.START_HAT;
+  var hasHat = (block.hat ?
+      block.hat === 'cap' : this.constants_.ADD_START_HATS) &&
+      !block.outputConnection && !block.previousConnection;
   var prevBlock = block.getPreviousBlock();
 
   return !!block.outputConnection ||
       hasHat || (prevBlock ? prevBlock.getNextBlock() == block : false);
+};
+
+/**
+ * Returns whether or not the top row has a right square corner.
+ * @param {!Blockly.BlockSvg} _block The block whose top row this represents.
+ * @return {boolean} Whether or not the top row has a right square corner.
+ */
+Blockly.blockRendering.TopRow.prototype.hasRightSquareCorner = function(
+    _block) {
+  return true;
 };
 
 /**
@@ -322,6 +326,13 @@ Blockly.blockRendering.TopRow.prototype.measure = function() {
  * @override
  */
 Blockly.blockRendering.TopRow.prototype.startsWithElemSpacer = function() {
+  return false;
+};
+
+/**
+ * @override
+ */
+Blockly.blockRendering.TopRow.prototype.endsWithElemSpacer = function() {
   return false;
 };
 
@@ -376,11 +387,21 @@ Blockly.utils.object.inherits(Blockly.blockRendering.BottomRow,
 /**
  * Returns whether or not the bottom row has a left square corner.
  * @param {!Blockly.BlockSvg} block The block whose bottom row this represents.
- * @returns {boolean} Whether or not the bottom row has a left square corner.
+ * @return {boolean} Whether or not the bottom row has a left square corner.
  */
 Blockly.blockRendering.BottomRow.prototype.hasLeftSquareCorner = function(
     block) {
   return !!block.outputConnection || !!block.getNextBlock();
+};
+
+/**
+ * Returns whether or not the bottom row has a right square corner.
+ * @param {!Blockly.BlockSvg} _block The block whose bottom row this represents.
+ * @return {boolean} Whether or not the bottom row has a right square corner.
+ */
+Blockly.blockRendering.BottomRow.prototype.hasRightSquareCorner = function(
+    _block) {
+  return true;
 };
 
 /**
@@ -412,6 +433,13 @@ Blockly.blockRendering.BottomRow.prototype.measure = function() {
  * @override
  */
 Blockly.blockRendering.BottomRow.prototype.startsWithElemSpacer = function() {
+  return false;
+};
+
+/**
+ * @override
+ */
+Blockly.blockRendering.BottomRow.prototype.endsWithElemSpacer = function() {
   return false;
 };
 
@@ -484,7 +512,8 @@ Blockly.blockRendering.InputRow.prototype.measure = function() {
         connectedBlockWidths += elem.connectedBlockWidth;
       } else if (Blockly.blockRendering.Types.isExternalInput(elem) &&
           elem.connectedBlockWidth != 0) {
-        connectedBlockWidths += (elem.connectedBlockWidth - elem.connectionWidth);
+        connectedBlockWidths += (elem.connectedBlockWidth -
+          elem.connectionWidth);
       }
     }
     if (!(Blockly.blockRendering.Types.isSpacer(elem))) {

@@ -1,25 +1,11 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2017 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
- * @fileoverview Utility functions for handling variables dynamic.
+ * @fileoverview Utility functions for handling typed variables.
  *
  * @author duzc2dtw@gmail.com (Du Tian Wei)
  */
@@ -32,20 +18,19 @@ goog.require('Blockly.Blocks');
 goog.require('Blockly.Msg');
 goog.require('Blockly.utils.xml');
 goog.require('Blockly.VariableModel');
-goog.require('Blockly.Xml');
 
 
 Blockly.VariablesDynamic.onCreateVariableButtonClick_String = function(button) {
   Blockly.Variables.createVariableButtonHandler(button.getTargetWorkspace(),
-      null, 'String');
+      undefined, 'String');
 };
 Blockly.VariablesDynamic.onCreateVariableButtonClick_Number = function(button) {
   Blockly.Variables.createVariableButtonHandler(button.getTargetWorkspace(),
-      null, 'Number');
+      undefined, 'Number');
 };
 Blockly.VariablesDynamic.onCreateVariableButtonClick_Colour = function(button) {
   Blockly.Variables.createVariableButtonHandler(button.getTargetWorkspace(),
-      null, 'Colour');
+      undefined, 'Colour');
 };
 /**
  * Construct the elements (blocks and button) required by the flyout for the
@@ -102,7 +87,7 @@ Blockly.VariablesDynamic.flyoutCategoryBlocks = function(workspace) {
     }
     if (Blockly.Blocks['variables_get_dynamic']) {
       variableModelList.sort(Blockly.VariableModel.compareByName);
-      for (var i = 0, variable; variable = variableModelList[i]; i++) {
+      for (var i = 0, variable; (variable = variableModelList[i]); i++) {
         var block = Blockly.utils.xml.createElement('block');
         block.setAttribute('type', 'variables_get_dynamic');
         block.setAttribute('gap', 8);

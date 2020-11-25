@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Language
- *
- * Copyright 2012 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2012 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -24,11 +10,11 @@
  *
  * After modifying this file, either run "build.py" from the parent directory,
  * or run (from this directory):
- * ../i18n/js_to_json.py
+ * ../scripts/i18n/js_to_json.py
  * to regenerate json/{en,qqq,synonyms}.json.
  *
  * To convert all of the json files to .js files, run:
- * ../i18n/create_messages.py json/*.json
+ * ../scripts/i18n/create_messages.py json/*.json
  */
 'use strict';
 
@@ -1631,6 +1617,11 @@ Blockly.Msg.PROCEDURES_IFRETURN_WARNING = 'Warning: This block may be used only 
 /// comment text - This text appears in a new workspace comment, to hint that
 /// the user can type here.
 Blockly.Msg.WORKSPACE_COMMENT_DEFAULT_TEXT = 'Say something...';
+
+/** @type {string} */
+/// workspace - This text is read out when a user navigates to the workspace while
+/// using a screen reader.
+Blockly.Msg.WORKSPACE_ARIA_LABEL = 'Blockly Workspace';
 
 /** @type {string} */
 /// warning - This appears if the user collapses a block, and blocks inside

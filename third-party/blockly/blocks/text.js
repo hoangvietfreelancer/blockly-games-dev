@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2012 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2012 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -299,7 +285,7 @@ Blockly.Blocks['text_getSubstring'] = {
   },
   /**
    * Create or delete an input for a numeric index.
-   * This block has two such inputs, independant of each other.
+   * This block has two such inputs, independent of each other.
    * @param {number} n Specify first or second input (1 or 2).
    * @param {boolean} isAt True if the input should exist.
    * @private
@@ -641,8 +627,8 @@ Blockly.Constants.Text.QUOTE_IMAGE_MIXIN = {
    * @this {Blockly.Block}
    */
   quoteField_: function(fieldName) {
-    for (var i = 0, input; input = this.inputList[i]; i++) {
-      for (var j = 0, field; field = input.fieldRow[j]; j++) {
+    for (var i = 0, input; (input = this.inputList[i]); i++) {
+      for (var j = 0, field; (field = input.fieldRow[j]); j++) {
         if (fieldName == field.name) {
           input.insertFieldAt(j, this.newQuote_(true));
           input.insertFieldAt(j + 2, this.newQuote_(false));
@@ -787,7 +773,8 @@ Blockly.Constants.Text.TEXT_JOIN_MUTATOR_MIXIN = {
     // Add new inputs.
     for (var i = 0; i < this.itemCount_; i++) {
       if (!this.getInput('ADD' + i)) {
-        var input = this.appendValueInput('ADD' + i);
+        var input = this.appendValueInput('ADD' + i)
+            .setAlign(Blockly.ALIGN_RIGHT);
         if (i == 0) {
           input.appendField(Blockly.Msg['TEXT_JOIN_TITLE_CREATEWITH']);
         }

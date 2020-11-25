@@ -1,0 +1,807 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+  <file original="SoyMsgBundle"
+        datatype="x-soy-msg-bundle"
+        xml:space="preserve"
+        source-language="en"
+        target-language="vi">
+    <body>
+      <trans-unit id="1826461500437475319" datatype="html">
+        <target>Nhớt</target>
+      </trans-unit>
+      <trans-unit id="3293197141663117591" datatype="html">
+        <target>nếu có đường phía trước</target>
+      </trans-unit>
+      <trans-unit id="1972926420229186759" datatype="html">
+        <target>danh sách</target>
+      </trans-unit>
+      <trans-unit id="295126337553066153" datatype="html">
+        <target>Hạ bút</target>
+      </trans-unit>
+      <trans-unit id="7512355766258181728" datatype="html">
+        <target>Ria mép</target>
+      </trans-unit>
+      <trans-unit id="1659902989275631885" datatype="html">
+        <target>Lông</target>
+      </trans-unit>
+      <trans-unit id="2235058884220483095" datatype="html">
+        <target>Vẽ một hình chữ nhật tại vị trí đã chỉ định và \nvới chiều rộng và chiều cao được chỉ định. </target>
+      </trans-unit>
+      <trans-unit id="8501578350336555138" datatype="html">
+        <target>Đại chiến lập trình</target>
+      </trans-unit>
+      <trans-unit id="2743360900788758506" datatype="html">
+        <target>Soạn bốn nốt đầu tiên của 'Frère Jacques'.</target>
+      </trans-unit>
+      <trans-unit id="3406853780244170069" datatype="html">
+        <target>Vỏ</target>
+      </trans-unit>
+      <trans-unit id="4294783477990312138" datatype="html">
+        <target>di chuyển về phía sau</target>
+      </trans-unit>
+      <trans-unit id="4833039242068195299" datatype="html">
+        <target>Có một khối mới cho phép bạn thay đổi màu sắc:</target>
+      </trans-unit>
+      <trans-unit id="5561607146816569193" datatype="html">
+        <target>vẽ ngôi sao màu vàng</target>
+      </trans-unit>
+      <trans-unit id="8285442700503222776" datatype="html">
+        <target>Cấp độ này cần cả khối 'khác nếu' và 'khác'.</target>
+      </trans-unit>
+      <trans-unit id="6668207685173746387" datatype="html">
+        <target>Khối lệnh If-else(Nếu-ngược lại) sẽ thực hiện công việc khi đúng hoặc sai</target>
+      </trans-unit>
+      <trans-unit id="113694686851263020" datatype="html">
+        <target>hợp xướng</target>
+      </trans-unit>
+      <trans-unit id="5922351303839855212" datatype="html">
+        <target>thực hiện</target>
+      </trans-unit>
+      <trans-unit id="4016533017150562878" datatype="html">
+        <target>Bạn đã sử dụng hết các khối lệnh cho màn chơi này. Để thêm khối lệnh mới, trước hết, bạn cần xoá bớt khối lệnh đang dùng.</target>
+      </trans-unit>
+      <trans-unit id="4502373380845009974" datatype="html">
+        <target>Xoay nhân vật sang trái hoặc phải 90 độ.</target>
+      </trans-unit>
+      <trans-unit id="6637086536416292952" datatype="html">
+        <target>Nhấp vào biểu tượng để sửa đổi khối 'nếu'.</target>
+      </trans-unit>
+      <trans-unit id="3730130313821215212" datatype="html">
+        <target>Pendulum</target>
+      </trans-unit>
+      <trans-unit id="2409415650297366191" datatype="html">
+        <target>cỡ chữ</target>
+      </trans-unit>
+      <trans-unit id="1124966775678993568" datatype="html">
+        <target>Chạy lại</target>
+      </trans-unit>
+      <trans-unit id="2075728723517768097" datatype="html">
+        <target>Khiến nhân vật thực hiên công việc mà khối lệnh \nđề cập. </target>
+      </trans-unit>
+      <trans-unit id="3298954388095553165" datatype="html">
+        <target>Khối 'và' chỉ đúng nếu cả hai đầu vào của nó đều đúng.</target>
+      </trans-unit>
+      <trans-unit id="5174223315558016597" datatype="html">
+        <target>Một nốt nhạc (C4: là nốt Đô của quãng 8 thứ 4).</target>
+      </trans-unit>
+      <trans-unit id="6841274917154697792" datatype="html">
+        <target>đàn vĩ cầm</target>
+      </trans-unit>
+      <trans-unit id="2801052495540198573" datatype="html">
+        <target>quay phải</target>
+      </trans-unit>
+      <trans-unit id="142206489755656102" datatype="html">
+        <target>Làm cho chân đảo ngược hướng giữa chừng của bộ phim.</target>
+      </trans-unit>
+      <trans-unit id="8787968467443938994" datatype="html">
+        <target>Bạn muốn bắt đầu lại?</target>
+      </trans-unit>
+      <trans-unit id="6896230882346401824" datatype="html">
+        <target>Kéo khối 'khác' vào khối 'nếu'.</target>
+      </trans-unit>
+      <trans-unit id="5894142643947508380" datatype="html">
+        <target>y</target>
+      </trans-unit>
+      <trans-unit id="4340252833994146197" datatype="html">
+        <target>văn bản</target>
+      </trans-unit>
+      <trans-unit id="7726741685578327869" datatype="html">
+        <target>Bạn có muốn xoá tất cả lời giải?</target>
+      </trans-unit>
+      <trans-unit id="8126100101233789051" datatype="html">
+        <target>Soạn bất cứ điều gì bạn muốn. Bạn đã có một số lượng lớn các khối lệnh mới mà bạn có thể khám phá. Chúc vui vẻ!</target>
+      </trans-unit>
+      <trans-unit id="4632196287172897579" datatype="html">
+        <target>đàn guitar</target>
+      </trans-unit>
+      <trans-unit id="6014527610997525213" datatype="html">
+        <target>Đối với mỗi con vật: Chọn hình ảnh, số chân và sắp xếp các đặc điểm của nó.</target>
+      </trans-unit>
+      <trans-unit id="1474725060640077068" datatype="html">
+        <target>đặc điểm:</target>
+      </trans-unit>
+      <trans-unit id="2352028843622499350" datatype="html">
+        <target>Chờ đợi trong thời gian quy định.</target>
+      </trans-unit>
+      <trans-unit id="3197033602024452368" datatype="html">
+        <target>Sử dụng lệnh 'pháo' để bắn trúng mục tiêu. Tham số đầu tiên là góc, tham số thứ hai là phạm vi. Tìm sự kết hợp đúng.</target>
+      </trans-unit>
+      <trans-unit id="1189440630481795561" datatype="html">
+        <target>gửi bạn vẽ của bạn đến bộ sưu tập.</target>
+      </trans-unit>
+      <trans-unit id="393337436178288384" datatype="html">
+        <target>Một'chức năng' cho phép bạn nhóm các khối lại với nhau, sau đó chạy chúng nhiều lần.</target>
+      </trans-unit>
+      <trans-unit id="2802666658606485719" datatype="html">
+        <target>Mục tiêu này cần phải được đánh nhiều lần. Sử dụng vòng lặp 'while (true)' để làm điều gì đó vô thời hạn.</target>
+      </trans-unit>
+      <trans-unit id="4457752034960227220" datatype="html">
+        <target>Đối thủ này cũng ở quá xa để sử dụng pháo. Nhưng bạn quá yếu để sống sót sau một vụ va chạm. Bơi về phía đối thủ trong khi vị trí nằm ngang của bạn nhỏ hơn 50. Sau đó, 'dừng lại' và sử dụng khẩu pháo.</target>
+      </trans-unit>
+      <trans-unit id="8148375971169689544" datatype="html">
+        <target>Bắn đại bác. Chỉ định hướng (0-360) và phạm vi \n(0-70). </target>
+      </trans-unit>
+      <trans-unit id="338593141197401350" datatype="html">
+        <target>Trợ giúp</target>
+      </trans-unit>
+      <trans-unit id="6758619824185404746" datatype="html">
+        <target>Đối thủ này sẽ di chuyển đi khi bị bắn trúng. Bơi về phía nó nếu nó nằm ngoài phạm vi (70 mét). </target>
+      </trans-unit>
+      <trans-unit id="1038502666716911829" datatype="html">
+        <target>Logic</target>
+      </trans-unit>
+      <trans-unit id="200165623200379383" datatype="html">
+        <target>Di truyền</target>
+      </trans-unit>
+      <trans-unit id="6303588441484075499" datatype="html">
+        <target>Trả về phần trăm máu hiện tại của người chơi (0 \nlà đã chết, 100 là còn sống). </target>
+      </trans-unit>
+      <trans-unit id="843223484015115436" datatype="html">
+        <target>Chim tìm mồi</target>
+      </trans-unit>
+      <trans-unit id="6595415916414788836" datatype="html">
+        <target>Thông tin cho nhà giáo dục...</target>
+      </trans-unit>
+      <trans-unit id="5367389302003162125" datatype="html">
+        <target>Biến</target>
+      </trans-unit>
+      <trans-unit id="5464369235708625567" datatype="html">
+        <target>Chạy bài</target>
+      </trans-unit>
+      <trans-unit id="2353453760676853811" datatype="html">
+        <target>Tuyệt!
+Tất cả %1 khối đúng.</target>
+      </trans-unit>
+      <trans-unit id="4168357856145700694" datatype="html">
+        <target>Vẽ ba ngôi sao màu vàng và một đường màu trắng.</target>
+      </trans-unit>
+      <trans-unit id="7264063713014053084" datatype="html">
+        <target>%1 khối chưa chính xác.</target>
+      </trans-unit>
+      <trans-unit id="6192195229721218364" datatype="html">
+        <target>Viết văn bản theo hướng rùa tại vị trí của nó.</target>
+      </trans-unit>
+      <trans-unit id="1670227216063075975" datatype="html">
+        <target>Mê cung lạc lối</target>
+      </trans-unit>
+      <trans-unit id="7631062511117780922" datatype="html">
+        <target>Gửi tới Thư viện</target>
+      </trans-unit>
+      <trans-unit id="8983835283796130303" datatype="html">
+        <target>đặt màu là</target>
+      </trans-unit>
+      <trans-unit id="4872332072586817805" datatype="html">
+        <target>Giải pháp của bạn hoạt động, nhưng bạn có thể làm tốt hơn. Sử dụng 'quét' để cho pháo biết bắn bao xa.</target>
+      </trans-unit>
+      <trans-unit id="7188061504659183367" datatype="html">
+        <target>Trả về tọa độ X của trình phát (0 là bên trái, \n100 là bên phải). </target>
+      </trans-unit>
+      <trans-unit id="3779565506856485604" datatype="html">
+        <target>Trả về thời gian hiện tại trong hình động (0-100).</target>
+      </trans-unit>
+      <trans-unit id="6464574658303727797" datatype="html">
+        <target>đàn piano</target>
+      </trans-unit>
+      <trans-unit id="9137982570247930589" datatype="html">
+        <target>ngược lại</target>
+      </trans-unit>
+      <trans-unit id="7626795853222454941" datatype="html">
+        <target>Phạm vi này chính xác là những gì lệnh 'pháo' cần bắn chính xác.</target>
+      </trans-unit>
+      <trans-unit id="8978780845435771093" datatype="html">
+        <target>Đối thủ này di chuyển qua lại, khiến nó khó bị đánh trúng. Biểu thức 'quét' trả về phạm vi chính xác cho đối thủ theo hướng được chỉ định.</target>
+      </trans-unit>
+      <trans-unit id="4634715858389563104" datatype="html">
+        <target>Di chuyển nhân vật về phía trước 1 ô.</target>
+      </trans-unit>
+      <trans-unit id="5718696793880573329" datatype="html">
+        <target>https://vi.wikipedia.org/wiki/Ph%C3%B4ng_ch%E1%BB%AF</target>
+      </trans-unit>
+      <trans-unit id="7356438874462563937" datatype="html">
+        <target>Khối mới này thêm một sự chậm trễ im lặng.</target>
+      </trans-unit>
+      <trans-unit id="5755229178435676524" datatype="html">
+        <target>Xin lỗi, '%1' không tương ứng với bất kỳ chương trình đã lưu nào.</target>
+      </trans-unit>
+      <trans-unit id="6914672331358629968" datatype="html">
+        <target>Dừng bơi. Người chơi nhân vật sẽ đi chậm lại để \ndừng. </target>
+      </trans-unit>
+      <trans-unit id="7922752443358054817" datatype="html">
+        <target>Làm cho rùa (vòng tròn và mũi tên) có thể nhìn \nthấy hoặc vô hình. </target>
+      </trans-unit>
+      <trans-unit id="4881180422989969508" datatype="html">
+        <target>xem Thư viện</target>
+      </trans-unit>
+      <trans-unit id="7834355790379776267" datatype="html">
+        <target>Có lỗi với các yêu cầu.</target>
+      </trans-unit>
+      <trans-unit id="5539181822180691031" datatype="html">
+        <target>Chạy chương trình của bạn cho đến khi nó dừng lại. Sau đó, bạn có thể gửi nhạc của bạn đến thư viện.</target>
+      </trans-unit>
+      <trans-unit id="3714008464107588345" datatype="html">
+        <target>Hình chữ nhật</target>
+      </trans-unit>
+      <trans-unit id="6175401358049603739" datatype="html">
+        <target>Nếu có đường đi theo hướng được chỉ định, \nthì thực hiện các khối hành động bên trong \ntrước. Nếu không, thì thực hiện các khối \nhành động ở bên dưới. </target>
+      </trans-unit>
+      <trans-unit id="7801404419489956886" datatype="html">
+        <target>Gửi nhạc của bạn đến Thư viện. </target>
+      </trans-unit>
+      <trans-unit id="2827102143774531943" datatype="html">
+        <target>Kiểm tra đáp án</target>
+      </trans-unit>
+      <trans-unit id="5866872255332532054" datatype="html">
+        <target>Vẽ một vòng tròn mở rộng phía sau người.</target>
+      </trans-unit>
+      <trans-unit id="8755460901437343901" datatype="html">
+        <target>in</target>
+      </trans-unit>
+      <trans-unit id="7989045751017922850" datatype="html">
+        <target>Tạo khối bắt đầu thứ hai có hai khối trễ, sau đó cũng phát 'Frère Jacques'.</target>
+      </trans-unit>
+      <trans-unit id="9149339265247850099" datatype="html">
+        <target>Soạn nhạc</target>
+      </trans-unit>
+      <trans-unit id="5220656584398214966" datatype="html">
+        <target>Quét đối thủ. Chỉ định một hướng (0-360). \nTrả lại khoảng cách cho đối thủ gần nhất \ntheo hướng đó. Trả về Infinity (Vô tận) nếu \nkhông tìm thấy đối thủ. </target>
+      </trans-unit>
+      <trans-unit id="3294282184296643568" datatype="html">
+        <target>Mỗi khối bắt đầu 'Frère Jacques' hai lần.</target>
+      </trans-unit>
+      <trans-unit id="3390292667307015294" datatype="html">
+        <target>Tạo bốn khối bắt đầu mà mỗi lần chơi 'Frère Jacques' hai lần. Thêm chính xác số lượng các khối lệnh chờ.</target>
+      </trans-unit>
+      <trans-unit id="4874525273235336318" datatype="html">
+        <target>Nếu có đường đi về một hướng cụ thể thì thực \nhiện các hành động bên trong. </target>
+      </trans-unit>
+      <trans-unit id="7603819200212787150" datatype="html">
+        <target>Tạo chức năng thứ ba cho phần tiếp theo của 'Frère Jacques'. Bốn nốt đầu tiên ngắn hơn.<x id='START_BREAK'/><x id='START_IMAGE'/></target>
+      </trans-unit>
+      <trans-unit id="3603639777806135642" datatype="html">
+        <target>Hoàn thành giai điệu đầy đủ của 'Frère Jacques'.</target>
+      </trans-unit>
+      <trans-unit id="5464017007607359776" datatype="html">
+        <target>sáo</target>
+      </trans-unit>
+      <trans-unit id="5222537568894189007" datatype="html">
+        <target>Trả về tọa độ Y của trình phát (0 là bên dưới, \n100 là bên trên). </target>
+      </trans-unit>
+      <trans-unit id="1190064103412776740" datatype="html">
+        <target>Lặp lại các hành động cho đến khi chạm tới đích.</target>
+      </trans-unit>
+      <trans-unit id="153560734647047937" datatype="html">
+        <target>Dừng chương trình và chạy lại. </target>
+      </trans-unit>
+      <trans-unit id="1164155135523387658" datatype="html">
+        <target>Tạo một chức năng để chơi bốn nốt đầu tiên của 'Frère Jacques'. Chạy chức năng đó hai lần. Đừng thêm bất kỳ khối ghi chú mới.</target>
+      </trans-unit>
+      <trans-unit id="8900931063490704792" datatype="html">
+        <target>Điều kiên khi không có sâu.</target>
+      </trans-unit>
+      <trans-unit id="6246818619115581781" datatype="html">
+        <target>Chạy chương trình của bạn đến khi nó dừng.</target>
+      </trans-unit>
+      <trans-unit id="3478101938294488773" datatype="html">
+        <target>Bạn có thể đặt nhiều khối lệnh bên trong khối lệnh 'lặp lại'.</target>
+      </trans-unit>
+      <trans-unit id="7327913532655152334" datatype="html">
+        <target>Màu sắc</target>
+      </trans-unit>
+      <trans-unit id="8678021904034212986" datatype="html">
+        <target>Khối lệnh Nếu - Ngược lại sẽ thực hiện một việc nào đó hoặc ngược lại.</target>
+      </trans-unit>
+      <trans-unit id="4552185797583323905" datatype="html">
+        <target>Sử dụng nút 'Xem Thư viện' để xem những gì người khác đã sáng tác. Nếu bạn soạn một cái gì đó thú vị, hãy sử dụng nút 'Gửi đến thư viện' để xuất bản nó.</target>
+      </trans-unit>
+      <trans-unit id="5768435196798212629" datatype="html">
+        <target>Sử dụng những gì bạn đã học ở cấp độ trước để làm cho chân bắt chéo.</target>
+      </trans-unit>
+      <trans-unit id="6456907015338240672" datatype="html">
+        <target>Chia sẻ bài lập trình với link:
+
+%1</target>
+      </trans-unit>
+      <trans-unit id="1530115130327733098" datatype="html">
+        <target>Giải pháp của bạn hoạt động, nhưng bạn có thể làm tốt hơn. Sử dụng các hàm để giảm số lượng mã lặp lại.</target>
+      </trans-unit>
+      <trans-unit id="4272389616881657314" datatype="html">
+        <target>Lưu và liên kết với các khối.</target>
+      </trans-unit>
+      <trans-unit id="8370361588013530358" datatype="html">
+        <target>Đi tới cuối con đường này chỉ bằng hai khối lệnh. Sử dụng 'lặp lại' để chạy các khối lệnh nhiều hơn một lần.</target>
+      </trans-unit>
+      <trans-unit id="1146327621590900127" datatype="html">
+        <target>ẩn rùa</target>
+      </trans-unit>
+      <trans-unit id="5355893896926183437" datatype="html">
+        <target>Ở màn chơi này, bạn cần xếp tất cả các khối lệnh vào không gian làm việc (khu vực lập trình).</target>
+      </trans-unit>
+      <trans-unit id="4138774728570944645" datatype="html">
+        <target>đi thẳng</target>
+      </trans-unit>
+      <trans-unit id="5509057833434715874" datatype="html">
+        <target>Level này rất khó, bạn có muốn bỏ qua nó để đến màn chơi tiếp theo. Bạn vẫn có thể quay lại màn chơi này.</target>
+      </trans-unit>
+      <trans-unit id="1364178431368067261" datatype="html">
+        <target>Target</target>
+      </trans-unit>
+      <trans-unit id="4084870379162400287" datatype="html">
+        <target>Sử dụng các hàm để vẽ các hình đơn giản từ đó tạo nhân vật cho bộ phim này.</target>
+      </trans-unit>
+      <trans-unit id="8857967060654747458" datatype="html">
+        <target>Thực hiện các khối bên trong khi nhấp vào nút \n'Chạy chương trình'. </target>
+      </trans-unit>
+      <trans-unit id="4211607341272449380" datatype="html">
+        <target>Vẽ ngôi sao chỉ với bốn khối.</target>
+      </trans-unit>
+      <trans-unit id="7027756430810063268" datatype="html">
+        <target>Vẽ hình chỉ với ba khối.</target>
+      </trans-unit>
+      <trans-unit id="6889946611851664425" datatype="html">
+        <target>rẽ phải</target>
+      </trans-unit>
+      <trans-unit id="7070128001410938826" datatype="html">
+        <target>Mỏ</target>
+      </trans-unit>
+      <trans-unit id="3794977698717555238" datatype="html">
+        <target>Lông vũ</target>
+      </trans-unit>
+      <trans-unit id="4999551220355901470" datatype="html">
+        <target>điểm y cuối</target>
+      </trans-unit>
+      <trans-unit id="5683520235628284499" datatype="html">
+        <target>Lựa chọn nhân vật mà bạn yêu thích ở thực đơn này.</target>
+      </trans-unit>
+      <trans-unit id="5999435247596889390" datatype="html">
+        <target>Vẽ một ngôi sao nhỏ màu vàng, sau đó vẽ một đường phía trên nó.</target>
+      </trans-unit>
+      <trans-unit id="2926653827494661093" datatype="html">
+        <target>Di chuyển vòng tròn nền đến đầu chương trình của bạn. Sau đó, nó sẽ xuất hiện phía sau người.</target>
+      </trans-unit>
+      <trans-unit id="515568367940150060" datatype="html">
+        <target>Hàm</target>
+      </trans-unit>
+      <trans-unit id="6143510286024124175" datatype="html">
+        <target>khi %1 đã nhấp</target>
+      </trans-unit>
+      <trans-unit id="3190825933229819894" datatype="html">
+        <target>Đưa nhân vật về vị trí xuất phát.</target>
+      </trans-unit>
+      <trans-unit id="2308673857579238421" datatype="html">
+        <target>Vẽ một đường thẳng từ điểm này đến điểm khác với \nchiều rộng được chỉ định. </target>
+      </trans-unit>
+      <trans-unit id="2302415315348704045" datatype="html">
+        <target>đường</target>
+      </trans-unit>
+      <trans-unit id="8892669298049897836" datatype="html">
+        <target>Sử dụng nút 'Xem Bộ sưu tập' để xem phim mà người khác đã thực hiện. Nếu bạn tạo một bộ phim thú vị, hãy sử dụng nút 'Gửi đến Bộ sưu tập' để xuất bản nó.</target>
+      </trans-unit>
+      <trans-unit id="2262369954338079412" datatype="html">
+        <target>Vẽ một vòng tròn tại vị trí đã chỉ định và với \nbán kính được chỉ định. </target>
+      </trans-unit>
+      <trans-unit id="638263655992198695" datatype="html">
+        <target>Đưa cho người đó một đôi tay.</target>
+      </trans-unit>
+      <trans-unit id="4245983571766649655" datatype="html">
+        <target>chiều rộng</target>
+      </trans-unit>
+      <trans-unit id="4130136547051161134" datatype="html">
+        <target>phông chữ</target>
+      </trans-unit>
+      <trans-unit id="2998105539596494275" datatype="html">
+        <target>Trả về tốc độ hiện tại của trình phát (0 là đứng \nim, 100 là tốc độ tối đa). </target>
+      </trans-unit>
+      <trans-unit id="6078028329780496695" datatype="html">
+        <target>rẽ trái</target>
+      </trans-unit>
+      <trans-unit id="7404435315115664673" datatype="html">
+        <target>Chạy chương trình bạn viết</target>
+      </trans-unit>
+      <trans-unit id="1240208832476690288" datatype="html">
+        <target>Xoá dữ liệu</target>
+      </trans-unit>
+      <trans-unit id="3856699002657821427" datatype="html">
+        <target>trống</target>
+      </trans-unit>
+      <trans-unit id="2160384363932764252" datatype="html">
+        <target>Mở bộ sưu tập bản vẽ.</target>
+      </trans-unit>
+      <trans-unit id="468604284020186650" datatype="html">
+        <target>Vòng tròn</target>
+      </trans-unit>
+      <trans-unit id="6958318060789777550" datatype="html">
+        <target>Làm một bộ phim của bất cứ điều gì bạn muốn. Bạn đã có một số lượng lớn các khối mới mà bạn có thể khám phá. Chúc vui vẻ!</target>
+      </trans-unit>
+      <trans-unit id="2178896211989818875" datatype="html">
+        <target>Bộ phim của bạn chưa chuyển động. Dùng khối để làm thứ gì đó thú vị. Rồi bạn có thể gửi bộ phim đến bộ sưu tập.</target>
+      </trans-unit>
+      <trans-unit id="742817462675794226" datatype="html">
+        <target>Khối</target>
+      </trans-unit>
+      <trans-unit id="7089740218907481322" datatype="html">
+        <target>Quay con rùa theo hướng trái hoăc phải theo số \nlượng quy định </target>
+      </trans-unit>
+      <trans-unit id="7416117358889101130" datatype="html">
+        <target>Tuyệt vời</target>
+      </trans-unit>
+      <trans-unit id="1289975531431370979" datatype="html">
+        <target>Rùa tập vẽ</target>
+      </trans-unit>
+      <trans-unit id="552526916301133670" datatype="html">
+        <target>Di chuyển rùa tiến hoặc lùi theo số lượng quy định.</target>
+      </trans-unit>
+      <trans-unit id="3543744213961724053" datatype="html">
+        <target>Sử dụng khối này để đi vào một hướng có sâu hoặc không có sâu</target>
+      </trans-unit>
+      <trans-unit id="5307840277183467457" datatype="html">
+        <target>Bạn đã hoàn thành với 1 dòng lệnh JavaScript:</target>
+      </trans-unit>
+      <trans-unit id="1737656799955544465" datatype="html">
+        <target>Bạn đã hoàn thành với %1 dòng lệnh JavaScript:</target>
+      </trans-unit>
+      <trans-unit id="945126989426193972" datatype="html">
+        <target>Nhấc hoặc hạ bút xuống, dừng hoặc bắt đầu vẽ.</target>
+      </trans-unit>
+      <trans-unit id="349162749155044421" datatype="html">
+        <target>Hiển thị tài liệu ngôn ngữ.</target>
+      </trans-unit>
+      <trans-unit id="373223763275851594" datatype="html">
+        <target>Gửi bộ phim của bạn đến bộ sưu tập.</target>
+      </trans-unit>
+      <trans-unit id="3595544601637178110" datatype="html">
+        <target>Bơi về phía trước. Chỉ định một hướng (0-360). </target>
+      </trans-unit>
+      <trans-unit id="1554687224871598336" datatype="html">
+        <target>Bạn đã sẵn sàng cho một thử thách mới chưa?</target>
+      </trans-unit>
+      <trans-unit id="8902797929631099229" datatype="html">
+        <target>Cấp độ này là một bộ phim. Bạn muốn cánh tay của người đó di chuyển trên màn hình. Nhấn nút play để xem bản xem trước.</target>
+      </trans-unit>
+      <trans-unit id="8834261967730878795" datatype="html">
+        <target>Có một khối mới cho phép bạn nhấc bút lên khi bạn di chuyển:</target>
+      </trans-unit>
+      <trans-unit id="6395102814842545595" datatype="html">
+        <target>Đối thủ này ở quá xa để sử dụng khẩu pháo (có giới hạn 70 mét). Thay vào đó, sử dụng lệnh 'bơi' để bắt đầu bơi về phía đối thủ và đâm vào nó.</target>
+      </trans-unit>
+      <trans-unit id="4212209041492309817" datatype="html">
+        <target>Tiêu đề:</target>
+      </trans-unit>
+      <trans-unit id="5771994620025805933" datatype="html">
+        <target>điểm x cuối</target>
+      </trans-unit>
+      <trans-unit id="1637937744230846397" datatype="html">
+        <target>Khi phim phát, giá trị của khối 'thời gian' được tính từ 0 đến 100. Vì bạn muốn vị trí 'y' của cánh tay bắt đầu từ 0 và chuyển đến 100, chúc bạn vui vẻ.</target>
+      </trans-unit>
+      <trans-unit id="4197068989498547704" datatype="html">
+        <target>Bạn đã sẵn sàng cho level %1 chưa?</target>
+      </trans-unit>
+      <trans-unit id="3200986365618126821" datatype="html">
+        <target>Sử dụng nút 'Xem Bộ sưu tập' để xem những gì người khác đã vẽ. Nếu bạn vẽ một cái gì đó thú vị, hãy sử dụng nút 'Gửi tới Bộ sưu tập' để xuất bản nó.</target>
+      </trans-unit>
+      <trans-unit id="1875380317327296159" datatype="html">
+        <target>Huỷ bỏ</target>
+      </trans-unit>
+      <trans-unit id="5287877014526685907" datatype="html">
+        <target>Không thể tải tập tin đã lưu của bạn. Có lẽ nó được tạo ra với một phiên bản khác của Blockly?</target>
+      </trans-unit>
+      <trans-unit id="6150116638989639252" datatype="html">
+        <target>nghỉ ngơi %1</target>
+      </trans-unit>
+      <trans-unit id="699246884300242965" datatype="html">
+        <target>Mục tiêu</target>
+      </trans-unit>
+      <trans-unit id="5307089055470217701" datatype="html">
+        <target>Bạn còn %1 khối lệnh.</target>
+      </trans-unit>
+      <trans-unit id="1794249676769577229" datatype="html">
+        <target>Bạn còn %0 khối lệnh.</target>
+      </trans-unit>
+      <trans-unit id="561418461570337551" datatype="html">
+        <target>Bạn còn %2 khối lệnh.</target>
+      </trans-unit>
+      <trans-unit id="337140251378156137" datatype="html">
+        <target>Trò chơi giáo dục STEAM.</target>
+      </trans-unit>
+      <trans-unit id="1141690494791308245" datatype="html">
+        <target>Chiều cao</target>
+      </trans-unit>
+      <trans-unit id="8496210457380227143" datatype="html">
+        <target>nếu có đường sang bên phải</target>
+      </trans-unit>
+      <trans-unit id="2149839397262503913" datatype="html">
+        <target>nếu có đường sang bên trái</target>
+      </trans-unit>
+      <trans-unit id="1848865137386959725" datatype="html">
+        <target>Chọn một phần để xem các khối.</target>
+      </trans-unit>
+      <trans-unit id="1710248589233118468" datatype="html">
+        <target>Player</target>
+      </trans-unit>
+      <trans-unit id="2201212763190410627" datatype="html">
+        <target>Thay đổi màu sắc của bút</target>
+      </trans-unit>
+      <trans-unit id="4286873352447791201" datatype="html">
+        <target>Tạo một chức năng để chơi bốn nốt đầu tiên của 'Frère Jacques'. Chạy chức năng đó hai lần. Đừng thêm bất kỳ khối ghi chú mới.</target>
+      </trans-unit>
+      <trans-unit id="8470792861618868667" datatype="html">
+        <target>đặt đọ rộng là</target>
+      </trans-unit>
+      <trans-unit id="456260871761620526" datatype="html">
+        <target>https://vi.wikipedia.org/wiki/In_%E1%BA%A5n</target>
+      </trans-unit>
+      <trans-unit id="5869746678245994303" datatype="html">
+        <target>Mật</target>
+      </trans-unit>
+      <trans-unit id="2885216356485784737" datatype="html">
+        <target>Chơi giai điệu của bạn với một cây vĩ cầm.</target>
+      </trans-unit>
+      <trans-unit id="8702063433119367086" datatype="html">
+        <target>Khối mới này cho phép bạn thay đổi sang một công cụ khác.</target>
+      </trans-unit>
+      <trans-unit id="8039840332068856511" datatype="html">
+        <target>Ngòi</target>
+      </trans-unit>
+      <trans-unit id="3679919084850649919" datatype="html">
+        <target>Nếu bạn không thể giải quyết mê cung phức tạp này? Hãy thử đi theo bức tường bên trái.Tiến lên nào!</target>
+      </trans-unit>
+      <trans-unit id="6072728260550347194" datatype="html">
+        <target>x</target>
+      </trans-unit>
+      <trans-unit id="196845303311122428" datatype="html">
+        <target>Nhấc bút</target>
+      </trans-unit>
+      <trans-unit id="5191783594929469171" datatype="html">
+        <target>xem bộ sưu tập</target>
+      </trans-unit>
+      <trans-unit id="6082253890512898845" datatype="html">
+        <target>quay trái</target>
+      </trans-unit>
+      <trans-unit id="1206893752796437601" datatype="html">
+        <target>bán kính</target>
+      </trans-unit>
+      <trans-unit id="1013045213595604872" datatype="html">
+        <target>di chuyển về phía trước</target>
+      </trans-unit>
+      <trans-unit id="1259247335901030726" datatype="html">
+        <target>Thay đổi góc ] để làm cho chim lấy được sâu và bay về trong tổ của nó.</target>
+      </trans-unit>
+      <trans-unit id="942598524992550069" datatype="html">
+        <target>Mở phòng trưng bày âm nhạc.</target>
+      </trans-unit>
+      <trans-unit id="5608606240995218215" datatype="html">
+        <target>Ốc sên</target>
+      </trans-unit>
+      <trans-unit id="8453803544352763294" datatype="html">
+        <target>Sắp được rồi! Còn 1 khối chưa đúng.</target>
+      </trans-unit>
+      <trans-unit id="7710842474668852368" datatype="html">
+        <target>hình ảnh:</target>
+      </trans-unit>
+      <trans-unit id="8660854177819810615" datatype="html">
+        <target>Văn bản</target>
+      </trans-unit>
+      <trans-unit id="1750183075968997387" datatype="html">
+        <target>Con vịt</target>
+      </trans-unit>
+      <trans-unit id="3470071553035745545" datatype="html">
+        <target>Con mèo</target>
+      </trans-unit>
+      <trans-unit id="501075344940371814" datatype="html">
+        <target>Con ong</target>
+      </trans-unit>
+      <trans-unit id="3160118472257830313" datatype="html">
+        <target>bình thường</target>
+      </trans-unit>
+      <trans-unit id="4570971685466979630" datatype="html">
+        <target>kèn trumpet</target>
+      </trans-unit>
+      <trans-unit id="6230928628295719065" datatype="html">
+        <target>https://vi.wikipedia.org/wiki/M%C3%A8o</target>
+      </trans-unit>
+      <trans-unit id="4151476981960996687" datatype="html">
+        <target>Scared</target>
+      </trans-unit>
+      <trans-unit id="2690010781849380215" datatype="html">
+        <target>Xem Thư viện</target>
+      </trans-unit>
+      <trans-unit id="1673297256341690673" datatype="html">
+        <target>chơi %1 nốt %2</target>
+      </trans-unit>
+      <trans-unit id="183634583247013051" datatype="html">
+        <target>Khối đang sáng còn chưa đúng.
+Cố lên nào!</target>
+      </trans-unit>
+      <trans-unit id="6642460592854928417" datatype="html">
+        <target> điểm x đầu</target>
+      </trans-unit>
+      <trans-unit id="4362899193616566882" datatype="html">
+        <target>Xếp chồng các khối lệnh 'đi thẳng' với nhau để nhân vật đi tới đích.</target>
+      </trans-unit>
+      <trans-unit id="996888288099530156" datatype="html">
+        <target>Gửi đến bộ sưu tập</target>
+      </trans-unit>
+      <trans-unit id="1456515588173174520" datatype="html">
+        <target>Nhấp vào %1 trong khối 'nếu' để thay đổi điều kiện của nó.</target>
+      </trans-unit>
+      <trans-unit id="3259640535054867497" datatype="html">
+        <target>https://vi.wikipedia.org/wiki/%E1%BB%90c</target>
+      </trans-unit>
+      <trans-unit id="4707202199565787405" datatype="html">
+        <target>Danh sách</target>
+      </trans-unit>
+      <trans-unit id="7484626604785566128" datatype="html">
+        <target>Ghép hình</target>
+      </trans-unit>
+      <trans-unit id="8146210747284231786" datatype="html">
+        <target>Đặt nhạc cụ là %1</target>
+      </trans-unit>
+      <trans-unit id="7977008118225488696" datatype="html">
+        <target>Âm nhạc sẽ nghe tốt hơn nếu bạn sử dụng một nhạc cụ khác nhau trong mỗi khối bắt đầu.</target>
+      </trans-unit>
+      <trans-unit id="4040754079951245169" datatype="html">
+        <target>'x' là vị trí ngang hiện tại của bạn. Sử dụng khối này để đi trong một khoảng nếu 'x' nhỏ hơn một số hoặc một khoảng khác.</target>
+      </trans-unit>
+      <trans-unit id="5407183519779774573" datatype="html">
+        <target>số chân:</target>
+      </trans-unit>
+      <trans-unit id="129044474462510468" datatype="html">
+        <target>https://vi.wikipedia.org/wiki/Ong</target>
+      </trans-unit>
+      <trans-unit id="3675417534208834552" datatype="html">
+        <target>Mở Thư viện phim.</target>
+      </trans-unit>
+      <trans-unit id="2030330442273381724" datatype="html">
+        <target>Xin chúc mừng!</target>
+      </trans-unit>
+      <trans-unit id="7037786213766848558" datatype="html">
+        <target>STEAM Games</target>
+      </trans-unit>
+      <trans-unit id="6543464286497146566" datatype="html">
+        <target>Thư viện</target>
+      </trans-unit>
+      <trans-unit id="3616731507597101347" datatype="html">
+        <target>Prints a number to your browser's console.</target>
+      </trans-unit>
+      <trans-unit id="7448819884522815447" datatype="html">
+        <target>Thay đổi màu của bút.</target>
+      </trans-unit>
+      <trans-unit id="2555132265974908158" datatype="html">
+        <target>in đậm</target>
+      </trans-unit>
+      <trans-unit id="6793476563803963571" datatype="html">
+        <target>Vẽ bất cứ thứ gì bạn muốn. Bạn đã có một số lượng lớn các khối mới mà bạn có thể khám phá. Chúc vui vẻ!</target>
+      </trans-unit>
+      <trans-unit id="5000330788075193694" datatype="html">
+        <target>lặp lại tới khi</target>
+      </trans-unit>
+      <trans-unit id="74073398998712653" datatype="html">
+        <target>Vòng lặp</target>
+      </trans-unit>
+      <trans-unit id="8593267208200988531" datatype="html">
+        <target>Gửi đến bộ sưu tập</target>
+      </trans-unit>
+      <trans-unit id="3714515657442045855" datatype="html">
+        <target>Cảm ơn bạn cho chương trình này! Nếu nhân viên của chúng tôi được đào tạo thích nó, họ sẽ xuất bản nó đến phòng trưng bày trong vài ngày.</target>
+      </trans-unit>
+      <trans-unit id="4936760056391284186" datatype="html">
+        <target>Các công thức toán học cho cánh tay thật phức tạp. Đây là câu trả lời:</target>
+      </trans-unit>
+      <trans-unit id="1287666504184153147" datatype="html">
+        <target>Khi bạn lập trình bằng ngôn ngữ JavaScript, bạn không thể quay lại lập trình dưới hình thức kéo-thả các khối lệnh! Bạn đồng ý chứ?</target>
+      </trans-unit>
+      <trans-unit id="8185961826099739990" datatype="html">
+        <target>Sử dụng khối 'nếu' để vẽ một cái đầu nhỏ cho nửa đầu của bộ phim. Sau đó vẽ một cái đầu lớn cho nửa sau của bộ phim.</target>
+      </trans-unit>
+      <trans-unit id="2691309882763584514" datatype="html">
+        <target>lựa chọn...</target>
+      </trans-unit>
+      <trans-unit id="2342117203836410245" datatype="html">
+        <target> điểm y đầu</target>
+      </trans-unit>
+      <trans-unit id="3295870457274347011" datatype="html">
+        <target>Khối 'thời gian' được tính từ 0 đến 100. Nhưng bây giờ bạn muốn vị trí 'y' của cánh tay kia bắt đầu từ 100 và chuyển sang 0. Bạn có thể tìm ra một công thức toán học đơn giản lật hướng không?</target>
+      </trans-unit>
+      <trans-unit id="3833581138339630463" datatype="html">
+        <target>Nhập môn đại chiến</target>
+      </trans-unit>
+      <trans-unit id="8275067544147149670" datatype="html">
+        <target>Vẽ 360 đường màu trắng sẽ trông giống như trăng tròn.</target>
+      </trans-unit>
+      <trans-unit id="4573328115248294852" datatype="html">
+        <target>Chương trình của bạn không xử lý thành công. Nhấn 'Chạy lại' và thử tiếp nhé.</target>
+      </trans-unit>
+      <trans-unit id="921047160155494346" datatype="html">
+        <target>phần đầu tiên</target>
+      </trans-unit>
+      <trans-unit id="4123080508175603514" datatype="html">
+        <target>Tài liệu</target>
+      </trans-unit>
+      <trans-unit id="8598935855828958714" datatype="html">
+        <target>xuất hiện rùa</target>
+      </trans-unit>
+      <trans-unit id="1791699700782054375" datatype="html">
+        <target>Di chuyển theo hướng của góc đã cho: 0 là bên \nphải, 90 là thẳng lên, v.v. </target>
+      </trans-unit>
+      <trans-unit id="1766725995274107609" datatype="html">
+        <target>đàn băng cầm</target>
+      </trans-unit>
+      <trans-unit id="3792533731296600003" datatype="html">
+        <target>in nghiêng</target>
+      </trans-unit>
+      <trans-unit id="4751586063015654997" datatype="html">
+        <target>Chạy bài lập trình để xem điều gì xảy ra.</target>
+      </trans-unit>
+      <trans-unit id="4392335668231319812" datatype="html">
+        <target>Đặt phông chữ được sử dụng bởi khối in.</target>
+      </trans-unit>
+      <trans-unit id="2458068685618493528" datatype="html">
+        <target>đặt màu là:</target>
+      </trans-unit>
+      <trans-unit id="268041291823489535" datatype="html">
+        <target>Làm phim</target>
+      </trans-unit>
+      <trans-unit id="7068270386450979574" datatype="html">
+        <target>x và y đánh dấu vị trí của chim. \nKhi x = 0 con chim ở gần cạnh trái, \nkhi x = 100 nó ở gần cạnh phải. \nKhi y = 0 con chim ở dưới cùng, \nkhi y = 100 nó ở trên cùng. </target>
+      </trans-unit>
+      <trans-unit id="2267198105126910529" datatype="html">
+        <target>Chơi một nốt nhạc của thời lượng và cao độ quy \nđịnh. </target>
+      </trans-unit>
+      <trans-unit id="1135115693149481071" datatype="html">
+        <target>Giải pháp của bạn đã hoạt động, nhưng bạn có thể làm tốt hơn.</target>
+      </trans-unit>
+      <trans-unit id="4916053588249741834" datatype="html">
+        <target>Tạo một chương trình vẽ hình vuông.</target>
+      </trans-unit>
+      <trans-unit id="2422825993066691483" datatype="html">
+        <target>Thay đổi chương trình của bạn để vẽ hình ngũ giác thay vì hình vuông.</target>
+      </trans-unit>
+      <trans-unit id="1786380721957392184" datatype="html">
+        <target>Thay vì một ngôi sao, bạn có thể vẽ bốn ngôi sao được sắp xếp trong một hình vuông không?</target>
+      </trans-unit>
+      <trans-unit id="5794689592834555935" datatype="html">
+        <target>không có sâu</target>
+      </trans-unit>
+      <trans-unit id="6825293024892668360" datatype="html">
+        <target>Vẽ các ngôi sao, sau đó vẽ bốn đường màu trắng.</target>
+      </trans-unit>
+      <trans-unit id="156975200040154659" datatype="html">
+        <target>https://vi.wikipedia.org/wiki/V%E1%BB%8Bt</target>
+      </trans-unit>
+      <trans-unit id="2289273381578581418" datatype="html">
+        <target>Bạn có thể thêm một vòng tròn màu đen để mặt trăng trở thành hình lưỡi liềm không?</target>
+      </trans-unit>
+      <trans-unit id="1359456544648181295" datatype="html">
+        <target>Thay đổi độ rộng của bút.</target>
+      </trans-unit>
+      <trans-unit id="1068587970027116228" datatype="html">
+        <target>Chuyển sang nhạc cụ được chỉ định khi phát các \nnốt nhạc tiếp theo. </target>
+      </trans-unit>
+      <trans-unit id="2038735006600750451" datatype="html">
+        <target>Phép toán</target>
+      </trans-unit>
+      <trans-unit id="6743524605815726714" datatype="html">
+        <target>Chờ đợi cho một ghi chú toàn bộ.</target>
+      </trans-unit>
+    </body>
+  </file>
+</xliff>

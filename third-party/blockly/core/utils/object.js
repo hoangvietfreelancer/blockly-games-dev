@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2019 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -52,13 +38,33 @@ Blockly.utils.object.mixin = function(target, source) {
 };
 
 /**
+ * Complete a deep merge of all members of a source object with a target object.
+ * @param {!Object} target Target.
+ * @param {!Object} source Source.
+ * @return {!Object} The resulting object.
+ */
+Blockly.utils.object.deepMerge = function(target, source) {
+  for (var x in source) {
+    if (source[x] != null && typeof source[x] === 'object') {
+      target[x] = Blockly.utils.object.deepMerge(
+          target[x] || Object.create(null), source[x]);
+    } else {
+      target[x] = source[x];
+    }
+  }
+  return target;
+};
+
+/**
  * Returns an array of a given object's own enumerable property values.
  * @param {!Object} obj Object containing values.
  * @return {!Array} Array of values.
  */
 Blockly.utils.object.values = function(obj) {
   if (Object.values) {
+    /* eslint-disable es5/no-es6-methods */
     return Object.values(obj);
+    /* eslint-enable es5/no-es6-methods */
   }
   // Fallback for IE.
   return Object.keys(obj).map(function(e) {

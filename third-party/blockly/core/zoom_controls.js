@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2015 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2015 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -26,17 +12,78 @@
 
 goog.provide('Blockly.ZoomControls');
 
+goog.require('Blockly.constants');
+goog.require('Blockly.Css');
+goog.require('Blockly.Scrollbar');
 goog.require('Blockly.Touch');
 goog.require('Blockly.utils.dom');
+goog.require('Blockly.utils.Svg');
 
 
 /**
  * Class for a zoom controls.
- * @param {!Blockly.Workspace} workspace The workspace to sit in.
+ * @param {!Blockly.WorkspaceSvg} workspace The workspace to sit in.
  * @constructor
  */
 Blockly.ZoomControls = function(workspace) {
+  /**
+   * @type {!Blockly.WorkspaceSvg}
+   * @private
+   */
   this.workspace_ = workspace;
+
+  /**
+   * A handle to use to unbind the mouse down event handler for zoom reset
+   *    button. Opaque data returned from Blockly.bindEventWithChecks_.
+   * @type {?Blockly.EventData}
+   * @private
+   */
+  this.onZoomResetWrapper_ = null;
+
+  /**
+   * A handle to use to unbind the mouse down event handler for zoom in button.
+   * Opaque data returned from Blockly.bindEventWithChecks_.
+   * @type {?Blockly.EventData}
+   * @private
+   */
+  this.onZoomInWrapper_ = null;
+
+  /**
+   * A handle to use to unbind the mouse down event handler for zoom out button.
+   * Opaque data returned from Blockly.bindEventWithChecks_.
+   * @type {?Blockly.EventData}
+   * @private
+   */
+  this.onZoomOutWrapper_ = null;
+
+  /**
+   * The vertical distance between the workspace bottom edge and the control.
+   * The value is initialized during `init`.
+   * @type {?number}
+   * @private
+   */
+  this.verticalSpacing_ = null;
+
+  /**
+   * The zoom in svg <g> element.
+   * @type {SVGGElement}
+   * @private
+   */
+  this.zoomInGroup_ = null;
+
+  /**
+   * The zoom out svg <g> element.
+   * @type {SVGGElement}
+   * @private
+   */
+  this.zoomOutGroup_ = null;
+
+  /**
+   * The zoom reset svg <g> element.
+   * @type {SVGGElement}
+   * @private
+   */
+  this.zoomResetGroup_ = null;
 };
 
 /**
@@ -69,7 +116,7 @@ Blockly.ZoomControls.prototype.MARGIN_SIDE_ = 20;
 
 /**
  * The SVG group containing the zoom controls.
- * @type {Element}
+ * @type {SVGElement}
  * @private
  */
 Blockly.ZoomControls.prototype.svgGroup_ = null;
@@ -88,13 +135,14 @@ Blockly.ZoomControls.prototype.left_ = 0;
  */
 Blockly.ZoomControls.prototype.top_ = 0;
 
+
 /**
  * Create the zoom controls.
- * @return {!Element} The zoom controls SVG group.
+ * @return {!SVGElement} The zoom controls SVG group.
  */
 Blockly.ZoomControls.prototype.createDom = function() {
-  this.svgGroup_ =
-      Blockly.utils.dom.createSvgElement('g', {}, null);
+  this.svgGroup_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.G, {}, null);
 
   // Each filter/pattern needs a unique ID for the case of multiple Blockly
   // instances on a page.  Browser behaviour becomes undefined otherwise.
@@ -129,9 +177,16 @@ Blockly.ZoomControls.prototype.init = function(verticalSpacing) {
 Blockly.ZoomControls.prototype.dispose = function() {
   if (this.svgGroup_) {
     Blockly.utils.dom.removeNode(this.svgGroup_);
-    this.svgGroup_ = null;
   }
-  this.workspace_ = null;
+  if (this.onZoomResetWrapper_) {
+    Blockly.unbindEvent_(this.onZoomResetWrapper_);
+  }
+  if (this.onZoomInWrapper_) {
+    Blockly.unbindEvent_(this.onZoomInWrapper_);
+  }
+  if (this.onZoomOutWrapper_) {
+    Blockly.unbindEvent_(this.onZoomOutWrapper_);
+  }
 };
 
 /**
@@ -193,21 +248,24 @@ Blockly.ZoomControls.prototype.createZoomOutSvg_ = function(rnd) {
         clip-path="url(#blocklyZoomoutClipPath837493)"></image>
   </g>
   */
-  var ws = this.workspace_;
-  this.zoomOutGroup_ = Blockly.utils.dom.createSvgElement('g',
+  this.zoomOutGroup_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.G,
       {'class': 'blocklyZoom'}, this.svgGroup_);
-  var clip = Blockly.utils.dom.createSvgElement('clipPath',
+  var clip = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.CLIPPATH,
       {
         'id': 'blocklyZoomoutClipPath' + rnd
       },
       this.zoomOutGroup_);
-  Blockly.utils.dom.createSvgElement('rect',
+  Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.RECT,
       {
         'width': 32,
         'height': 32,
       },
       clip);
-  var zoomoutSvg = Blockly.utils.dom.createSvgElement('image',
+  var zoomoutSvg = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.IMAGE,
       {
         'width': Blockly.SPRITE.width,
         'height': Blockly.SPRITE.height,
@@ -217,16 +275,11 @@ Blockly.ZoomControls.prototype.createZoomOutSvg_ = function(rnd) {
       },
       this.zoomOutGroup_);
   zoomoutSvg.setAttributeNS(Blockly.utils.dom.XLINK_NS, 'xlink:href',
-      ws.options.pathToMedia + Blockly.SPRITE.url);
+      this.workspace_.options.pathToMedia + Blockly.SPRITE.url);
 
   // Attach listener.
-  Blockly.bindEventWithChecks_(zoomoutSvg, 'mousedown', null, function(e) {
-    ws.markFocused();
-    ws.zoomCenter(-1);
-    Blockly.Touch.clearTouchIdentifier();  // Don't block future drags.
-    e.stopPropagation();  // Don't start a workspace scroll.
-    e.preventDefault();  // Stop double-clicking from selecting text.
-  });
+  this.onZoomOutWrapper_ = Blockly.bindEventWithChecks_(
+      this.zoomOutGroup_, 'mousedown', null, this.zoom_.bind(this, -1));
 };
 
 /**
@@ -246,21 +299,24 @@ Blockly.ZoomControls.prototype.createZoomInSvg_ = function(rnd) {
         clip-path="url(#blocklyZoominClipPath837493)"></image>
   </g>
   */
-  var ws = this.workspace_;
-  this.zoomInGroup_ = Blockly.utils.dom.createSvgElement('g',
+  this.zoomInGroup_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.G,
       {'class': 'blocklyZoom'}, this.svgGroup_);
-  var clip = Blockly.utils.dom.createSvgElement('clipPath',
+  var clip = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.CLIPPATH,
       {
         'id': 'blocklyZoominClipPath' + rnd
       },
       this.zoomInGroup_);
-  Blockly.utils.dom.createSvgElement('rect',
+  Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.RECT,
       {
         'width': 32,
         'height': 32,
       },
       clip);
-  var zoominSvg = Blockly.utils.dom.createSvgElement('image',
+  var zoominSvg = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.IMAGE,
       {
         'width': Blockly.SPRITE.width,
         'height': Blockly.SPRITE.height,
@@ -270,16 +326,29 @@ Blockly.ZoomControls.prototype.createZoomInSvg_ = function(rnd) {
       },
       this.zoomInGroup_);
   zoominSvg.setAttributeNS(Blockly.utils.dom.XLINK_NS, 'xlink:href',
-      ws.options.pathToMedia + Blockly.SPRITE.url);
+      this.workspace_.options.pathToMedia + Blockly.SPRITE.url);
 
   // Attach listener.
-  Blockly.bindEventWithChecks_(zoominSvg, 'mousedown', null, function(e) {
-    ws.markFocused();
-    ws.zoomCenter(1);
-    Blockly.Touch.clearTouchIdentifier();  // Don't block future drags.
-    e.stopPropagation();  // Don't start a workspace scroll.
-    e.preventDefault();  // Stop double-clicking from selecting text.
-  });
+  this.onZoomInWrapper_ = Blockly.bindEventWithChecks_(
+      this.zoomInGroup_, 'mousedown', null, this.zoom_.bind(this, 1));
+};
+
+/**
+ * Handles a mouse down event on the zoom in or zoom out buttons on the
+ *    workspace.
+ * @param {number} amount Amount of zooming. Negative amount values zoom out,
+ *    and positive amount values zoom in.
+ * @param {!Event} e A mouse down event.
+ * @private
+ */
+Blockly.ZoomControls.prototype.zoom_ = function(amount, e) {
+  this.workspace_.markFocused();
+  var oldZoom = this.workspace_.scale;
+  this.workspace_.zoomCenter(amount);
+  this.fireZoomEvent_(oldZoom);
+  Blockly.Touch.clearTouchIdentifier();  // Don't block future drags.
+  e.stopPropagation();  // Don't start a workspace scroll.
+  e.preventDefault();  // Stop double-clicking from selecting text.
 };
 
 /**
@@ -299,21 +368,24 @@ Blockly.ZoomControls.prototype.createZoomResetSvg_ = function(rnd) {
         clip-path="url(#blocklyZoomresetClipPath837493)"></image>
   </g>
   */
-  var ws = this.workspace_;
-  this.zoomResetGroup_ = Blockly.utils.dom.createSvgElement('g',
+  this.zoomResetGroup_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.G,
       {'class': 'blocklyZoom'}, this.svgGroup_);
-  var clip = Blockly.utils.dom.createSvgElement('clipPath',
+  var clip = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.CLIPPATH,
       {
         'id': 'blocklyZoomresetClipPath' + rnd
       },
       this.zoomResetGroup_);
-  Blockly.utils.dom.createSvgElement('rect',
+  Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.RECT,
       {
         'width': 32,
         'height': 32
       },
       clip);
-  var zoomresetSvg = Blockly.utils.dom.createSvgElement('image',
+  var zoomresetSvg = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.IMAGE,
       {
         'width': Blockly.SPRITE.width,
         'height': Blockly.SPRITE.height,
@@ -322,17 +394,57 @@ Blockly.ZoomControls.prototype.createZoomResetSvg_ = function(rnd) {
       },
       this.zoomResetGroup_);
   zoomresetSvg.setAttributeNS(Blockly.utils.dom.XLINK_NS, 'xlink:href',
-      ws.options.pathToMedia + Blockly.SPRITE.url);
+      this.workspace_.options.pathToMedia + Blockly.SPRITE.url);
 
   // Attach event listeners.
-  Blockly.bindEventWithChecks_(zoomresetSvg, 'mousedown', null, function(e) {
-    ws.markFocused();
-    ws.setScale(ws.options.zoomOptions.startScale);
-    ws.beginCanvasTransition();
-    ws.scrollCenter();
-    setTimeout(ws.endCanvasTransition.bind(ws), 500);
-    Blockly.Touch.clearTouchIdentifier();  // Don't block future drags.
-    e.stopPropagation();  // Don't start a workspace scroll.
-    e.preventDefault();  // Stop double-clicking from selecting text.
-  });
+  this.onZoomResetWrapper_ = Blockly.bindEventWithChecks_(
+      this.zoomResetGroup_, 'mousedown', null, this.resetZoom_.bind(this));
 };
+
+/**
+ * Handles a mouse down event on the reset zoom button on the workspace.
+ * @param {!Event} e A mouse down event.
+ * @private
+ */
+Blockly.ZoomControls.prototype.resetZoom_ = function(e) {
+  this.workspace_.markFocused();
+  var oldZoom = this.workspace_.scale;
+  this.workspace_.setScale(this.workspace_.options.zoomOptions.startScale);
+  this.workspace_.beginCanvasTransition();
+  this.workspace_.scrollCenter();
+  setTimeout(this.workspace_.endCanvasTransition.bind(this.workspace_), 500);
+  this.fireZoomEvent_(oldZoom);
+  Blockly.Touch.clearTouchIdentifier();  // Don't block future drags.
+  e.stopPropagation();  // Don't start a workspace scroll.
+  e.preventDefault();  // Stop double-clicking from selecting text.
+};
+
+/**
+ * Fires a zoom control ui event.
+ * @param {number} oldZoom The workspace scale before zoom happened.
+ * @private
+ */
+Blockly.ZoomControls.prototype.fireZoomEvent_ = function(oldZoom) {
+  var uiEvent = new Blockly.Events.Ui(null, 'zoom', oldZoom, this.workspace_.scale);
+  uiEvent.workspaceId = this.workspace_.id;
+  Blockly.Events.fire(uiEvent);
+};
+
+/**
+ * CSS for zoom controls.  See css.js for use.
+ */
+Blockly.Css.register([
+  /* eslint-disable indent */
+  '.blocklyZoom>image, .blocklyZoom>svg>image {',
+    'opacity: .4;',
+  '}',
+
+  '.blocklyZoom>image:hover, .blocklyZoom>svg>image:hover {',
+    'opacity: .6;',
+  '}',
+
+  '.blocklyZoom>image:active, .blocklyZoom>svg>image:active {',
+    'opacity: .8;',
+  '}'
+  /* eslint-enable indent */
+]);

@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2016 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2016 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -30,6 +16,7 @@
  */
 goog.provide('Blockly.Events');
 
+goog.require('Blockly.registry');
 goog.require('Blockly.utils');
 
 
@@ -197,7 +184,10 @@ Blockly.Events.fire = function(event) {
 Blockly.Events.fireNow_ = function() {
   var queue = Blockly.Events.filter(Blockly.Events.FIRE_QUEUE_, true);
   Blockly.Events.FIRE_QUEUE_.length = 0;
-  for (var i = 0, event; event = queue[i]; i++) {
+  for (var i = 0, event; (event = queue[i]); i++) {
+    if (!event.workspaceId) {
+      continue;
+    }
     var workspace = Blockly.Workspace.getById(event.workspaceId);
     if (workspace) {
       workspace.fireChangeListener(event);
@@ -220,7 +210,7 @@ Blockly.Events.filter = function(queueIn, forward) {
   var mergedQueue = [];
   var hash = Object.create(null);
   // Merge duplicates.
-  for (var i = 0, event; event = queue[i]; i++) {
+  for (var i = 0, event; (event = queue[i]); i++) {
     if (!event.isNull()) {
       var key = [event.type, event.blockId, event.workspaceId].join(' ');
 
@@ -266,7 +256,7 @@ Blockly.Events.filter = function(queueIn, forward) {
   }
   // Move mutation events to the top of the queue.
   // Intentionally skip first event.
-  for (var i = 1, event; event = queue[i]; i++) {
+  for (var i = 1, event; (event = queue[i]); i++) {
     if (event.type == Blockly.Events.CHANGE &&
         event.element == 'mutation') {
       queue.unshift(queue.splice(i, 1)[0]);
@@ -280,7 +270,7 @@ Blockly.Events.filter = function(queueIn, forward) {
  * in the undo stack.  Called by Blockly.Workspace.clearUndo.
  */
 Blockly.Events.clearPendingUndo = function() {
-  for (var i = 0, event; event = Blockly.Events.FIRE_QUEUE_[i]; i++) {
+  for (var i = 0, event; (event = Blockly.Events.FIRE_QUEUE_[i]); i++) {
     event.recordUndo = false;
   }
 };
@@ -333,12 +323,12 @@ Blockly.Events.setGroup = function(state) {
  * Compute a list of the IDs of the specified block and all its descendants.
  * @param {!Blockly.Block} block The root block.
  * @return {!Array.<string>} List of block IDs.
- * @private
+ * @package
  */
-Blockly.Events.getDescendantIds_ = function(block) {
+Blockly.Events.getDescendantIds = function(block) {
   var ids = [];
   var descendants = block.getDescendants(false);
-  for (var i = 0, descendant; descendant = descendants[i]; i++) {
+  for (var i = 0, descendant; (descendant = descendants[i]); i++) {
     ids[i] = descendant.id;
   }
   return ids;
@@ -349,50 +339,15 @@ Blockly.Events.getDescendantIds_ = function(block) {
  * @param {!Object} json JSON representation.
  * @param {!Blockly.Workspace} workspace Target workspace for event.
  * @return {!Blockly.Events.Abstract} The event represented by the JSON.
+ * @throws {Error} if an event type is not found in the registry.
  */
 Blockly.Events.fromJson = function(json, workspace) {
-  // TODO: Should I have a way to register a new event into here?
-  var event;
-  switch (json.type) {
-    case Blockly.Events.CREATE:
-      event = new Blockly.Events.Create(null);
-      break;
-    case Blockly.Events.DELETE:
-      event = new Blockly.Events.Delete(null);
-      break;
-    case Blockly.Events.CHANGE:
-      event = new Blockly.Events.Change(null, '', '', '', '');
-      break;
-    case Blockly.Events.MOVE:
-      event = new Blockly.Events.Move(null);
-      break;
-    case Blockly.Events.VAR_CREATE:
-      event = new Blockly.Events.VarCreate(null);
-      break;
-    case Blockly.Events.VAR_DELETE:
-      event = new Blockly.Events.VarDelete(null);
-      break;
-    case Blockly.Events.VAR_RENAME:
-      event = new Blockly.Events.VarRename(null, '');
-      break;
-    case Blockly.Events.UI:
-      event = new Blockly.Events.Ui(null);
-      break;
-    case Blockly.Events.COMMENT_CREATE:
-      event = new Blockly.Events.CommentCreate(null);
-      break;
-    case Blockly.Events.COMMENT_CHANGE:
-      event = new Blockly.Events.CommentChange(null);
-      break;
-    case Blockly.Events.COMMENT_MOVE:
-      event = new Blockly.Events.CommentMove(null);
-      break;
-    case Blockly.Events.COMMENT_DELETE:
-      event = new Blockly.Events.CommentDelete(null);
-      break;
-    default:
-      throw Error('Unknown event type.');
+  var eventClass = Blockly.registry.getClass(Blockly.registry.Type.EVENT,
+      json.type);
+  if (!eventClass) {
+    throw Error('Unknown event type.');
   }
+  var event = new eventClass();
   event.fromJson(json);
   event.workspaceId = workspace.id;
   return event;
@@ -408,13 +363,16 @@ Blockly.Events.fromJson = function(json, workspace) {
 Blockly.Events.disableOrphans = function(event) {
   if (event.type == Blockly.Events.MOVE ||
       event.type == Blockly.Events.CREATE) {
+    if (!event.workspaceId) {
+      return;
+    }
     var workspace = Blockly.Workspace.getById(event.workspaceId);
     var block = workspace.getBlockById(event.blockId);
     if (block) {
       var parent = block.getParent();
       if (parent && parent.isEnabled()) {
         var children = block.getDescendants(false);
-        for (var i = 0, child; child = children[i]; i++) {
+        for (var i = 0, child; (child = children[i]); i++) {
           child.setEnabled(true);
         }
       } else if ((block.outputConnection || block.previousConnection) &&

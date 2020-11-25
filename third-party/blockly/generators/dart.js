@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Language
- *
- * Copyright 2014 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2014 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -117,7 +103,7 @@ Blockly.Dart.init = function(workspace) {
   var variables = Blockly.Variables.allUsedVarModels(workspace);
   for (var i = 0; i < variables.length; i++) {
     defvars.push(Blockly.Dart.variableDB_.getName(variables[i].getId(),
-        Blockly.Variables.NAME_TYPE));
+        Blockly.VARIABLE_CATEGORY_NAME));
   }
 
   // Declare all of the variables.
@@ -190,10 +176,11 @@ Blockly.Dart.quote_ = function(string) {
  * @return {string} Dart string.
  * @private
  */
-Blockly.Dart.multiline_quote_ = function(string) {
-  // Can't use goog.string.quote since $ must also be escaped.
-  string = string.replace(/'''/g, '\\\'\\\'\\\'');
-  return '\'\'\'' + string + '\'\'\'';
+Blockly.Dart.multiline_quote_ = function (string) {
+  var lines = string.split(/\n/g).map(Blockly.Dart.quote_);
+  // Join with the following, plus a newline:
+  // + '\n' +
+  return lines.join(' + \'\\n\' + \n');
 };
 
 
@@ -229,7 +216,7 @@ Blockly.Dart.scrub_ = function(block, code, opt_thisOnly) {
       if (block.inputList[i].type == Blockly.INPUT_VALUE) {
         var childBlock = block.inputList[i].connection.targetBlock();
         if (childBlock) {
-          var comment = Blockly.Dart.allNestedComments(childBlock);
+          comment = Blockly.Dart.allNestedComments(childBlock);
           if (comment) {
             commentCode += Blockly.Dart.prefixLines(comment, '// ');
           }

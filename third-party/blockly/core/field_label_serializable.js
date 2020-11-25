@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2019 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2019 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -62,14 +48,13 @@ Blockly.utils.object.inherits(Blockly.FieldLabelSerializable,
  */
 Blockly.FieldLabelSerializable.fromJson = function(options) {
   var text = Blockly.utils.replaceMessageReferences(options['text']);
-  return new Blockly.FieldLabelSerializable(text, null, options);
+  return new Blockly.FieldLabelSerializable(text, undefined, options);
 };
 
 /**
  * Editable fields usually show some sort of UI indicating they are
  * editable. This field should not.
  * @type {boolean}
- * @public
  */
 Blockly.FieldLabelSerializable.prototype.EDITABLE = false;
 
@@ -77,7 +62,6 @@ Blockly.FieldLabelSerializable.prototype.EDITABLE = false;
  * Serializable fields are saved by the XML renderer, non-serializable fields
  * are not.  This field should be serialized, but only edited programmatically.
  * @type {boolean}
- * @public
  */
 Blockly.FieldLabelSerializable.prototype.SERIALIZABLE = true;
 

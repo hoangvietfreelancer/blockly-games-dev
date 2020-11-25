@@ -1,21 +1,7 @@
 /**
  * @license
- * Visual Blocks Editor
- *
- * Copyright 2017 Google Inc.
- * https://developers.google.com/blockly/
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2017 Google LLC
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -29,7 +15,7 @@ goog.provide('Blockly.WorkspaceCommentSvg.render');
 goog.require('Blockly.utils');
 goog.require('Blockly.utils.Coordinate');
 goog.require('Blockly.utils.dom');
-goog.require('Blockly.WorkspaceCommentSvg');
+goog.require('Blockly.utils.Svg');
 
 
 /**
@@ -89,14 +75,16 @@ Blockly.WorkspaceCommentSvg.prototype.render = function() {
   this.createEditor_();
   this.svgGroup_.appendChild(this.foreignObject_);
 
-  this.svgHandleTarget_ = Blockly.utils.dom.createSvgElement('rect',
+  this.svgHandleTarget_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.RECT,
       {
         'class': 'blocklyCommentHandleTarget',
         'x': 0,
         'y': 0
       });
   this.svgGroup_.appendChild(this.svgHandleTarget_);
-  this.svgRectTarget_ = Blockly.utils.dom.createSvgElement('rect',
+  this.svgRectTarget_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.RECT,
       {
         'class': 'blocklyCommentTarget',
         'x': 0,
@@ -151,7 +139,7 @@ Blockly.WorkspaceCommentSvg.prototype.createEditor_ = function() {
     </foreignObject>
   */
   this.foreignObject_ = Blockly.utils.dom.createSvgElement(
-      'foreignObject',
+      Blockly.utils.Svg.FOREIGNOBJECT,
       {
         'x': 0,
         'y': Blockly.WorkspaceCommentSvg.TOP_OFFSET,
@@ -164,6 +152,7 @@ Blockly.WorkspaceCommentSvg.prototype.createEditor_ = function() {
   var textarea = document.createElementNS(Blockly.utils.dom.HTML_NS, 'textarea');
   textarea.className = 'blocklyCommentTextarea';
   textarea.setAttribute('dir', this.RTL ? 'RTL' : 'LTR');
+  textarea.readOnly = !this.isEditable();
   body.appendChild(textarea);
   this.textarea_ = textarea;
   this.foreignObject_.appendChild(body);
@@ -185,25 +174,25 @@ Blockly.WorkspaceCommentSvg.prototype.createEditor_ = function() {
  */
 Blockly.WorkspaceCommentSvg.prototype.addResizeDom_ = function() {
   this.resizeGroup_ = Blockly.utils.dom.createSvgElement(
-      'g',
+      Blockly.utils.Svg.G,
       {
         'class': this.RTL ? 'blocklyResizeSW' : 'blocklyResizeSE'
       },
       this.svgGroup_);
   var resizeSize = Blockly.WorkspaceCommentSvg.RESIZE_SIZE;
   Blockly.utils.dom.createSvgElement(
-      'polygon',
+      Blockly.utils.Svg.POLYGON,
       {'points': '0,x x,x x,0'.replace(/x/g, resizeSize.toString())},
       this.resizeGroup_);
   Blockly.utils.dom.createSvgElement(
-      'line',
+      Blockly.utils.Svg.LINE,
       {
         'class': 'blocklyResizeLine',
         'x1': resizeSize / 3, 'y1': resizeSize - 1,
         'x2': resizeSize - 1, 'y2': resizeSize / 3
       }, this.resizeGroup_);
   Blockly.utils.dom.createSvgElement(
-      'line',
+      Blockly.utils.Svg.LINE,
       {
         'class': 'blocklyResizeLine',
         'x1': resizeSize * 2 / 3, 'y1': resizeSize - 1,
@@ -217,12 +206,13 @@ Blockly.WorkspaceCommentSvg.prototype.addResizeDom_ = function() {
  */
 Blockly.WorkspaceCommentSvg.prototype.addDeleteDom_ = function() {
   this.deleteGroup_ = Blockly.utils.dom.createSvgElement(
-      'g',
+      Blockly.utils.Svg.G,
       {
         'class': 'blocklyCommentDeleteIcon'
       },
       this.svgGroup_);
-  this.deleteIconBorder_ = Blockly.utils.dom.createSvgElement('circle',
+  this.deleteIconBorder_ = Blockly.utils.dom.createSvgElement(
+      Blockly.utils.Svg.CIRCLE,
       {
         'class': 'blocklyDeleteIconShape',
         'r': '7',
@@ -232,7 +222,7 @@ Blockly.WorkspaceCommentSvg.prototype.addDeleteDom_ = function() {
       this.deleteGroup_);
   // x icon.
   Blockly.utils.dom.createSvgElement(
-      'line',
+      Blockly.utils.Svg.LINE,
       {
         'x1': '5', 'y1': '10',
         'x2': '10', 'y2': '5',
@@ -241,7 +231,7 @@ Blockly.WorkspaceCommentSvg.prototype.addDeleteDom_ = function() {
       },
       this.deleteGroup_);
   Blockly.utils.dom.createSvgElement(
-      'line',
+      Blockly.utils.Svg.LINE,
       {
         'x1': '5', 'y1': '5',
         'x2': '10', 'y2': '10',
@@ -257,7 +247,6 @@ Blockly.WorkspaceCommentSvg.prototype.addDeleteDom_ = function() {
  * @private
  */
 Blockly.WorkspaceCommentSvg.prototype.resizeMouseDown_ = function(e) {
-  //this.promote_();
   this.unbindDragEvents_();
   if (Blockly.utils.isRightButton(e)) {
     // No right-click.
@@ -330,12 +319,12 @@ Blockly.WorkspaceCommentSvg.prototype.unbindDragEvents_ = function() {
   }
 };
 
-/*
+/**
  * Handle a mouse-up event while dragging a comment's border or resize handle.
  * @param {!Event} e Mouse up event.
  * @private
  */
-Blockly.WorkspaceCommentSvg.prototype.resizeMouseUp_ = function(/*e*/) {
+Blockly.WorkspaceCommentSvg.prototype.resizeMouseUp_ = function(/* e */) {
   Blockly.Touch.clearTouchIdentifier();
   this.unbindDragEvents_();
 };
