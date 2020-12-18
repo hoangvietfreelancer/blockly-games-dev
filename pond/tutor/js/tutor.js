@@ -1,18 +1,7 @@
 /**
  * @license
  * Copyright 2013 Google LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 /**
@@ -71,15 +60,11 @@ Pond.Tutor.init = function() {
     };
     window.addEventListener('scroll', function() {
       onresize(null);
-      Blockly.svgResize(BlocklyGames.workspace);
+      Blockly.svgResize(BlocklyInterface.workspace);
     });
     onresize(null);
-    var toolbox = document.getElementById('toolbox');
-    BlocklyGames.workspace = Blockly.inject('blockly',
-        {'media': 'third-party/blockly/media/',
-         'oneBasedIndex': false,
-         'rtl': false,
-         'toolbox': toolbox,
+    BlocklyInterface.injectBlockly(
+        {'rtl': false,
          'trashcan': true});
     Blockly.JavaScript.addReservedWords('scan,cannon,drive,swim,stop,speed,' +
         'damage,health,loc_x,getX,loc_y,getY,');
@@ -120,6 +105,7 @@ Pond.Tutor.init = function() {
   }
 
   if (editorDiv) {
+    BlocklyInterface.blocksDisabled = true;
     // Remove the container for source code in the 'done' dialog.
     var containerCode = document.getElementById('containerCode');
     containerCode.parentNode.removeChild(containerCode);
@@ -145,29 +131,37 @@ Pond.Tutor.init = function() {
     BlocklyAce.importBabel();
   }
 
+  BlocklyGames.bindClick('runButton', Pond.Tutor.runButtonClick);
   window.addEventListener('resize', onresize);
   onresize(null);
 
   for (var avatarData, i = 0; (avatarData = Pond.Tutor.PLAYERS[i]); i++) {
+    var name = BlocklyGames.getMsg(avatarData.name);
+    var avatar = new Pond.Avatar(name, avatarData.start, avatarData.damage,
+        !code, Pond.Battle);
     if (avatarData.code) {
       var div = document.getElementById(avatarData.code);
       var code = div.textContent;
+      avatar.setCode(undefined, code, code);
     } else {
-      if (blocklyDiv) {
-        var code = function() {
-          return Blockly.JavaScript.workspaceToCode(BlocklyGames.workspace);
-        };
-      } else {
-        var code = function() {return BlocklyInterface.editor['getValue']()};
-      }
+      Pond.currentAvatar = avatar;
     }
-    var name = BlocklyGames.getMsg(avatarData.name);
-    Pond.Battle.addAvatar(name, code, avatarData.start, avatarData.damage);
   }
   Pond.reset();
 };
 
 window.addEventListener('load', Pond.Tutor.init);
+
+
+/**
+ * Click the run button.  Save the code for the end of level dialog and save.
+ * This runs in parallel with Pond.runButtonClick on a separate event handler.
+ * @param {!Event} e Mouse or touch event.
+ */
+Pond.Tutor.runButtonClick = function(e) {
+  BlocklyInterface.executedJsCode = BlocklyInterface.getJsCode();
+  BlocklyInterface.executedCode = BlocklyInterface.getCode();
+};
 
 Pond.Tutor.PLAYERS = [
   // Level 0.
@@ -335,7 +329,7 @@ Pond.endBattle = function(survivors) {
     // Everyone died.
   } else if (survivors == 1) {
     // Winner.
-    if (typeof Pond.Battle.RANK[0].code_ == 'function') {
+    if (Pond.Battle.RANK[0].visualizationIndex == 0) {
       if ((BlocklyGames.LEVEL == 5 || BlocklyGames.LEVEL == 6) &&
           Pond.Battle.ticks > 200000) {
         // Avatar just pinged Pendulum to death with fixed range.

@@ -1,5 +1,5 @@
 // Automatically generated file.  Do not edit!
- // This version is modified by viet1pro, Komaz from MIS!
+// This version is modified by viet1pro, Komaz, Baonamdao from MIS!
 
 
 window.CLOSURE_NO_DEPS = true;
