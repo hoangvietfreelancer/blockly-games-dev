@@ -1,4 +1,5 @@
 var gameNames = "puzzle maze bird turtle movie music pond-tutor pond-duck".split(" ");
+
 function deleteData() {
     var a, b;
     if (checkLanguage() === "en") {
@@ -30,18 +31,19 @@ function delCookie(cname) {
 }
 
 function setCookie(cname, cvalue, exdays) {
-    var d = new Date();
-    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
-    var expires = "expires=" + d.toUTCString();
-    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+    setLocalStorage(cname, cvalue)
 }
 
 function getCookie(cname) {
-    var name = cname + "=";
-    var decodedCookie = decodeURIComponent(document.cookie);
-    var ca = decodedCookie.split(';');
-    for (var i = 0; i < ca.length; i++) { var c = ca[i]; while (c.charAt(0) == ' ') { c = c.substring(1); } if (c.indexOf(name) == 0) { return c.substring(name.length, c.length); } }
-    return "";
+    return getLocalStorage(cname)
+}
+
+function getLocalStorage(name) {
+    return localStorage.getItem(name);
+}
+
+function setLocalStorage(name, value) {
+    localStorage.setItem(name, value);
 }
 
 function checkExitsData() {
@@ -57,11 +59,11 @@ function checkExitsData() {
 }
 
 function checkLanguage() {
-    if (getCookie("lang") == "") {
-        setCookie("lang", "vi", 365);
+    if (getLocalStorage("lang") == "") {
+        setLocalStorage("lang", "vi");
         return "vi";
     } else {
-        lang = getCookie("lang");
+        lang = getLocalStorage("lang");
         if (lang == 'en') {
             return "en";
         } else {
@@ -70,13 +72,13 @@ function checkLanguage() {
         return unknow;
     }
 }
+
 function checkTheme() {
-    if (getCookie("theme") == "") {
-        setCookie("theme", "light", 365);
+    if (getLocalStorage("theme") == "") {
+        setLocalStorage("theme", "light");
         return "light";
     } else {
-        theme = getCookie("theme");
-        if (theme == 'dark') {
+        if (getLocalStorage("theme") == 'dark') {
             return "dark";
         } else {
             return "light";
@@ -86,11 +88,11 @@ function checkTheme() {
 }
 
 function checkModalShow() {
-    if (getCookie("modal") == "") {
-        setCookie("modal", "true", 365);
+    if (getLocalStorage("modal") == "") {
+        setLocalStorage("modal", "true");
         return true;
     } else {
-        modal = getCookie("modal");
+        modal = getLocalStorage("modal");
         if (modal == 'true') {
             return true;
         } else {
@@ -101,7 +103,7 @@ function checkModalShow() {
 }
 
 function loadStatus() {
-    window.location.href='status.html';
+    window.location.href = 'status.html';
 }
 
 function clearDataButtonShow() {
@@ -109,13 +111,20 @@ function clearDataButtonShow() {
         $("#clearDataPara").css("display", "block");
     }
 }
+
 function changeTheme() {
     if (checkTheme() == "dark") {
         delCookie('theme');
-        setCookie('theme', 'light', 365);
+        setLocalStorage('theme', 'light');
     } else {
         delCookie('theme');
-        setCookie('theme', 'dark', 365);
+        setLocalStorage('theme', 'dark');
     }
+    location.reload();
+}
+
+function changeLang(lang) {
+    delCookie('lang');
+    setLocalStorage('lang', 'en');
     location.reload();
 }
