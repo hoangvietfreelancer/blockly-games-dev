@@ -31,6 +31,21 @@ function getLocalStorage(name) {
     return localStorage.getItem(name);
 }
 
+function checkLanguage() {
+    if (getLocalStorage("lang") == "") {
+        setLocalStorage("lang", "vi");
+        return "vi";
+    } else {
+        var lang = getLocalStorage("lang");
+        if (lang == 'en') {
+            return "en";
+        } else {
+            return "vi";
+        }
+        return unknow;
+    }
+}
+
 (function() {
     // Load style
     var masterStyle = document.createElement('link');
@@ -48,7 +63,7 @@ function getLocalStorage(name) {
 
     // Use a series of heuristics that determine the likely language of this user.
     // First choice: Language cookie.
-    var cookie = getLocalStorage("lang");
+    var cookie = checkLanguage();
     var lang = cookie;
     if (window['BlocklyGamesLanguages'].indexOf(lang) == -1) {
         // Third choice: The browser's language.
