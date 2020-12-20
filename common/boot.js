@@ -32,9 +32,6 @@ function getLocalStorage(name) {
 }
 
 (function() {
-    // Load script
-    loadScript();
-
     // Load style
     var masterStyle = document.createElement('link');
     masterStyle.rel = 'stylesheet';
@@ -63,8 +60,12 @@ function getLocalStorage(name) {
     }
     window['BlocklyGamesLang'] = lang;
 
+    // Load functions
+    var funcScript = document.createElement('script');
+    funcScript.src = "masterFunc.js";
+    document.head.appendChild(funcScript);
+
     // Load the chosen language pack.
-    var script = document.createElement('script');
     var debug = false;
     try {
         debug = !!sessionStorage.getItem('debug');
@@ -74,40 +75,46 @@ function getLocalStorage(name) {
     } catch (e) {
         // Don't even think of throwing an error.
     }
-    script.src = appName + '/generated/' + lang +
+    var scriptSrc = appName + '/generated/' + lang +
         (debug ? '/uncompressed.js' : '/compressed.js');
-    script.type = 'text/javascript';
-    document.head.appendChild(script);
+    includeScript(scriptSrc, function() {
+        setTimeout(() => {
+            // Load JQuery and adding dark theme
+            includeScript("js/jquery.min.js", function() {
+                if (checkTheme() == "dark") {
+                    $("body").addClass("dark")
+                    $(".blocklySvg").addClass("dark")
+                    $("span#title").addClass("dark")
+                    $("span#title a").addClass("dark")
+                    $(".blocklyFlyoutBackground").addClass("dark")
+                    $(".blocklyToolboxDiv").addClass("dark")
+                    $(".blocklyTreeRow .blocklyTreeLabel").addClass("dark")
+                } else {
+                    $("body").addClass("light")
+                    $(".blocklySvg").addClass("light")
+                    $("span#title").addClass("light")
+                    $("span#title a").addClass("light")
+                    $(".blocklyFlyoutBackground").addClass("light")
+                    $(".blocklyToolboxDiv").addClass("light")
+                    $(".blocklyTreeRow .blocklyTreeLabel").addClass("light")
+                }
+            });
+        }, 100);
+    })
 })();
 
-async function loadScript() {
-    var funcScript = document.createElement('script');
-    funcScript.src = "masterFunc.js";
-    funcScript.async = true;
-    document.head.appendChild(funcScript);
+function includeScript(url, callback) {
+    // Adding the script tag to the head as suggested before
+    var head = document.head;
+    var script = document.createElement('script');
+    script.type = 'text/javascript';
+    script.src = url;
 
-    var jquerryScript = document.createElement('script');
-    jquerryScript.src = "js/jquery.min.js";
-    document.head.appendChild(jquerryScript);
-    let promise = new Promise((res, rej) => {
-        setTimeout(() => res("Now it's done!"), 500)
-    });
-    await promise;
-    if (checkTheme() == "dark") {
-        $("body").addClass("dark")
-        $(".blocklySvg").addClass("dark")
-        $("span#title").addClass("dark")
-        $("span#title a").addClass("dark")
-        $(".blocklyFlyoutBackground").addClass("dark")
-        $(".blocklyToolboxDiv").addClass("dark")
-        $(".blocklyTreeRow .blocklyTreeLabel").addClass("dark")
-    } else {
-        $("body").addClass("light")
-        $(".blocklySvg").addClass("light")
-        $("span#title").addClass("light")
-        $("span#title a").addClass("light")
-        $(".blocklyFlyoutBackground").addClass("light")
-        $(".blocklyToolboxDiv").addClass("light")
-        $(".blocklyTreeRow .blocklyTreeLabel").addClass("light")
-    }
+    // Fire the loading
+    head.appendChild(script);
+
+    // Then bind the event to the callback function.
+    // There are several events for cross browser compatibility.
+    script.onreadystatechange = callback;
+    script.onload = callback;
 }
