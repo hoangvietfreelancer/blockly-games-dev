@@ -32,6 +32,16 @@ function getLocalStorage(name) {
 }
 
 (function() {
+    // Load script
+    loadScript();
+
+    // Load style
+    var masterStyle = document.createElement('link');
+    masterStyle.rel = 'stylesheet';
+    masterStyle.type = 'text/css';
+    masterStyle.href = 'common/master.css';
+    document.head.appendChild(masterStyle);
+
     // Application path.
     var appName = location.pathname.match(/\/([-\w]+)(\.html)?$/);
     appName = appName ? appName[1].replace('-', '/') : 'index';
@@ -68,15 +78,6 @@ function getLocalStorage(name) {
         (debug ? '/uncompressed.js' : '/compressed.js');
     script.type = 'text/javascript';
     document.head.appendChild(script);
-    // Load script
-    loadScript();
-
-    // Load style
-    var masterStyle = document.createElement('link');
-    masterStyle.rel = 'stylesheet';
-    masterStyle.type = 'text/css';
-    masterStyle.href = 'common/master.css';
-    document.head.appendChild(masterStyle);
 })();
 
 async function loadScript() {
@@ -86,10 +87,10 @@ async function loadScript() {
     document.head.appendChild(funcScript);
 
     var jquerryScript = document.createElement('script');
-    jquerryScript.src = "https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js";
+    jquerryScript.src = "js/jquery.min.js";
     document.head.appendChild(jquerryScript);
     let promise = new Promise((res, rej) => {
-        setTimeout(() => res("Now it's done!"), 1000)
+        setTimeout(() => res("Now it's done!"), 500)
     });
     await promise;
     if (checkTheme() == "dark") {
