@@ -62,15 +62,23 @@ function checkLanguage() {
     window['BlocklyGamesLanguages'] = ['en', 'vi'];
 
     // Use a series of heuristics that determine the likely language of this user.
-    // First choice: Language cookie.
-    var cookie = checkLanguage();
-    var lang = cookie;
-    if (window['BlocklyGamesLanguages'].indexOf(lang) == -1) {
-        // Third choice: The browser's language.
-        lang = navigator.language;
+    // First choice: The URL specified language.
+    var param = location.search.match(/[?&]lang=([^&]+)/);
+    var lang = param ? param[1].replace(/\+/g, '%20') : null;
+    if (window['BlocklyGamesLanguages'].indexOf(lang) != -1) {
+        // Save this explicit choice as cookie.
+        setLocalStorage("lang", lang);
+    } else {
+        // Second choice: Language cookie.
+        var cookie = checkLanguage();
+        var lang = cookie;
         if (window['BlocklyGamesLanguages'].indexOf(lang) == -1) {
-            // Fourth choice: English.
-            lang = 'en';
+            // Third choice: The browser's language.
+            lang = navigator.language;
+            if (window['BlocklyGamesLanguages'].indexOf(lang) == -1) {
+                // Fourth choice: English.
+                lang = 'en';
+            }
         }
     }
     window['BlocklyGamesLang'] = lang;
